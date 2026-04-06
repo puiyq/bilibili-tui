@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::Deserialize;
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct HeartbeatResponse {
     pub code: i32,

@@ -1,5 +1,6 @@
-use crate::storage::{Credentials, Keybindings};
-use crate::ui::ThemeVariant;
+use crate::api::video::VideoPage;
+use crate::infrastructure::persistence::{Credentials, Keybindings};
+use crate::presentation::tui::{DynamicTab, ThemeVariant};
 
 /// Actions that can be triggered from UI components
 #[derive(Debug, Clone)]
@@ -29,7 +30,7 @@ pub enum AppAction {
     PlayVideoWithPages {
         bvid: String,
         aid: i64,
-        pages: Vec<crate::api::video::VideoPage>,
+        pages: Vec<VideoPage>,
         current_index: usize,
     },
     /// Navigate to next sidebar item
@@ -59,7 +60,7 @@ pub enum AppAction {
     /// Toggle comment replies expansion
     ToggleCommentReplies,
     /// Switch dynamic tab
-    SwitchDynamicTab(crate::ui::DynamicTab),
+    SwitchDynamicTab(DynamicTab),
     /// Select UP master (0 = all, 1+ = specific UP)
     SelectUpMaster(usize),
     /// Switch to next theme variant

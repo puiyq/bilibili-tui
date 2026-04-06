@@ -107,6 +107,7 @@ impl CommentItem {
 }
 
 /// Comment type enum for different content types
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub enum CommentType {
     /// 视频 (Video)
@@ -129,6 +130,7 @@ pub enum CommentType {
     Course = 33,
 }
 
+#[allow(dead_code)]
 impl CommentType {
     pub fn as_i32(&self) -> i32 {
         *self as i32

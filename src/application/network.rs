@@ -3,7 +3,7 @@ use crate::api::{
     history::HistoryData, live::LiveRoom, recommend::VideoItem, search::HotwordItem,
     search::SearchVideoItem, video::RelatedVideoItem, video::VideoInfo, ApiClient,
 };
-use crate::ui::DynamicTab;
+use crate::presentation::tui::DynamicTab;
 use std::sync::{mpsc, Arc};
 
 #[derive(Debug)]

@@ -26,7 +26,7 @@ pub use theme::{Theme, ThemeVariant};
 pub use video_card::{VideoCard, VideoCardGrid};
 pub use video_detail::VideoDetailPage;
 
-use crate::app::AppAction;
+use crate::application::AppAction;
 use crate::storage::Keybindings;
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers, MouseEvent},

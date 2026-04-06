@@ -3,7 +3,7 @@
 use super::{Component, Theme};
 use crate::api::auth::{QrcodeData, QrcodePollStatus};
 use crate::api::client::ApiClient;
-use crate::app::AppAction;
+use crate::application::AppAction;
 use crate::storage::{Credentials, Keybindings};
 use image::DynamicImage;
 use qrcode::QrCode;

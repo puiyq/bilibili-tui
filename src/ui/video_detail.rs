@@ -5,7 +5,7 @@ use super::{Component, Theme};
 use crate::api::client::ApiClient;
 use crate::api::comment::CommentItem;
 use crate::api::video::{RelatedVideoItem, VideoInfo};
-use crate::app::AppAction;
+use crate::application::AppAction;
 use crate::storage::Keybindings;
 use ratatui::{
     crossterm::event::{KeyCode, MouseButton, MouseEvent, MouseEventKind},

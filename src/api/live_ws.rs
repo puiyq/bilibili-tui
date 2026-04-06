@@ -36,6 +36,7 @@ impl TryFrom<u32> for OpCode {
 }
 
 /// Protocol version
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 pub enum ProtoVer {

@@ -4,7 +4,7 @@ use super::{Component, Theme};
 use crate::api::client::ApiClient;
 use crate::api::comment::CommentItem;
 use crate::api::dynamic::DynamicItem;
-use crate::app::AppAction;
+use crate::application::AppAction;
 use crate::storage::Keybindings;
 use image::DynamicImage;
 use ratatui::{

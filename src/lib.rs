@@ -1,5 +1,9 @@
-pub mod api;
+mod api;
 pub mod app;
-pub mod player;
-pub mod storage;
-pub mod ui;
+pub mod application;
+pub mod domain;
+pub mod infrastructure;
+mod player;
+pub mod presentation;
+mod storage;
+mod ui;

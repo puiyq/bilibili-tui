@@ -1,0 +1,220 @@
+use crate::app::App;
+use crate::presentation::tui::{Component, Page};
+use crossterm::event::MouseEventKind;
+use ratatui::{
+    crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers, MouseEvent},
+    prelude::*,
+    DefaultTerminal, Frame,
+};
+use std::io;
+
+impl App {
+    /// Main run loop
+    pub async fn run(mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+        // Initialize the first page
+        self.init_current_page().await;
+
+        // Store the last content area for mouse handling
+        let mut last_content_area = Rect::default();
+
+        // Scroll accumulator for high-resolution mouse wheel throttling
+        // Many modern mice generate multiple scroll events per physical "click"
+        const SCROLL_THRESHOLD: i32 = 15; // Accumulate 15 events before scrolling
+        let mut scroll_accumulator: i32 = 0;
+
+        while !self.should_quit {
+            terminal.draw(|frame| {
+                last_content_area = self.get_content_area(frame.area());
+                self.draw(frame);
+            })?;
+
+            if event::poll(std::time::Duration::from_millis(100))? {
+                match event::read()? {
+                    Event::Key(key) => {
+                        if key.kind == KeyEventKind::Press {
+                            self.handle_input(key.code, key.modifiers).await;
+                        }
+                    }
+                    Event::Mouse(mouse) => match mouse.kind {
+                        MouseEventKind::ScrollDown => {
+                            scroll_accumulator += 1;
+                            if scroll_accumulator >= SCROLL_THRESHOLD {
+                                scroll_accumulator = 0;
+                                self.handle_mouse(mouse, last_content_area).await;
+                            }
+                        }
+                        MouseEventKind::ScrollUp => {
+                            scroll_accumulator -= 1;
+                            if scroll_accumulator <= -SCROLL_THRESHOLD {
+                                scroll_accumulator = 0;
+                                self.handle_mouse(mouse, last_content_area).await;
+                            }
+                        }
+                        _ => {
+                            // Other mouse events (clicks) are handled immediately
+                            self.handle_mouse(mouse, last_content_area).await;
+                        }
+                    },
+                    _ => {}
+                }
+            }
+
+            // Handle background tasks (like QR code polling)
+            self.tick().await;
+        }
+        Ok(())
+    }
+
+    /// Get the content area excluding sidebar
+    fn get_content_area(&self, area: Rect) -> Rect {
+        // Login page, VideoDetail, and DynamicDetail use full area
+        if matches!(
+            self.current_page,
+            Page::Login(_) | Page::VideoDetail(_) | Page::DynamicDetail(_)
+        ) {
+            return area;
+        }
+
+        // Main layout with sidebar
+        if self.show_sidebar {
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Length(16), // Sidebar
+                    Constraint::Min(40),    // Content
+                ])
+                .split(area)[1]
+        } else {
+            area
+        }
+    }
+
+    fn draw(&mut self, frame: &mut Frame) {
+        let area = frame.area();
+
+        // Login page, VideoDetail, and DynamicDetail don't show sidebar
+        if matches!(
+            self.current_page,
+            Page::Login(_) | Page::VideoDetail(_) | Page::DynamicDetail(_)
+        ) {
+            match &mut self.current_page {
+                Page::Login(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+                Page::VideoDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+                Page::DynamicDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+                _ => {}
+            }
+            return;
+        }
+
+        // Main layout with sidebar
+        let chunks = if self.show_sidebar {
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Length(16), // Sidebar
+                    Constraint::Min(40),    // Content
+                ])
+                .split(area)
+        } else {
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Min(40)])
+                .split(area)
+        };
+
+        if self.show_sidebar && chunks.len() > 1 {
+            self.sidebar.draw(frame, chunks[0], &self.theme);
+            self.draw_page(frame, chunks[1]);
+        } else {
+            self.draw_page(frame, chunks[0]);
+        }
+    }
+
+    fn draw_page(&mut self, frame: &mut Frame, area: Rect) {
+        match &mut self.current_page {
+            Page::Login(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::Home(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::Search(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::Dynamic(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::DynamicDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::VideoDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::History(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::Live(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::LiveDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::Settings(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+        }
+    }
+
+    async fn handle_input(&mut self, key: KeyCode, modifiers: KeyModifiers) {
+        let keys = &self.keybindings;
+        let action = match &mut self.current_page {
+            Page::Login(page) => page.handle_input(key, keys),
+            Page::Home(page) => page.handle_input(key, keys),
+            Page::Search(page) => page.handle_input(key, keys),
+            Page::Dynamic(page) => page.handle_input_with_modifiers(key, modifiers, keys),
+            Page::DynamicDetail(page) => page.handle_input(key, keys),
+            Page::VideoDetail(page) => page.handle_input(key, keys),
+            Page::History(page) => page.handle_input(key, keys),
+            Page::Live(page) => page.handle_input(key, keys),
+            Page::LiveDetail(page) => page.handle_input(key, keys),
+            Page::Settings(page) => page.handle_input(key, keys),
+        };
+
+        if let Some(action) = action {
+            self.handle_action(action).await;
+        }
+    }
+
+    async fn handle_mouse(&mut self, event: MouseEvent, area: Rect) {
+        let action = match &mut self.current_page {
+            Page::Login(page) => page.handle_mouse(event, area),
+            Page::Home(page) => page.handle_mouse(event, area),
+            Page::Search(page) => page.handle_mouse(event, area),
+            Page::Dynamic(page) => page.handle_mouse(event, area),
+            Page::DynamicDetail(page) => page.handle_mouse(event, area),
+            Page::VideoDetail(page) => page.handle_mouse(event, area),
+            Page::History(page) => page.handle_mouse(event, area),
+            Page::Live(page) => page.handle_mouse(event, area),
+            Page::LiveDetail(page) => page.handle_mouse(event, area),
+            Page::Settings(page) => page.handle_mouse(event, area),
+        };
+
+        if let Some(action) = action {
+            self.handle_action(action).await;
+        }
+    }
+
+    async fn tick(&mut self) {
+        self.drain_network_events();
+        match &mut self.current_page {
+            Page::Login(page) => {
+                let client = &self.api_client;
+                if let Some(action) = page.tick(client).await {
+                    self.handle_action(action).await;
+                }
+            }
+            Page::Home(page) => {
+                // Non-blocking: poll completed downloads and start new ones
+                page.poll_cover_results();
+                page.start_cover_downloads();
+            }
+            Page::Search(page) => {
+                page.poll_cover_results();
+                page.start_cover_downloads();
+            }
+            Page::Dynamic(page) => {
+                page.poll_cover_results();
+                page.start_cover_downloads();
+            }
+            Page::VideoDetail(page) => {
+                page.poll_cover_results();
+                page.start_cover_downloads();
+            }
+            Page::History(page) => {
+                page.poll_cover_results();
+                page.start_cover_downloads();
+            }
+            _ => {}
+        }
+    }
+}

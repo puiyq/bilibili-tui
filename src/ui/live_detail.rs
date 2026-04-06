@@ -5,7 +5,7 @@ use crate::api::client::ApiClient;
 use crate::api::live::LiveRoomInfo;
 use crate::api::live_client::LiveClient;
 use crate::api::live_ws::LiveMessage;
-use crate::app::AppAction;
+use crate::application::AppAction;
 use crate::storage::Keybindings;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::{prelude::*, widgets::*};

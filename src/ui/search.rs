@@ -4,7 +4,7 @@ use super::video_card::{VideoCard, VideoCardGrid};
 use super::{Component, Theme};
 use crate::api::client::ApiClient;
 use crate::api::search::{HotwordItem, SearchVideoItem};
-use crate::app::AppAction;
+use crate::application::AppAction;
 use crate::storage::Keybindings;
 use ratatui::{
     crossterm::event::{KeyCode, MouseButton, MouseEvent, MouseEventKind},
