@@ -94,6 +94,61 @@ impl HistoryPage {
         }
     }
 
+    pub fn begin_loading(&mut self) {
+        self.loading = true;
+        self.error = None;
+    }
+
+    pub fn apply_history_init(&mut self, data: crate::api::history::HistoryData) {
+        self.items = data
+            .list
+            .into_iter()
+            .map(|item| HistoryCard {
+                item,
+                cover_protocol: None,
+            })
+            .collect();
+        self.cursor = Some(data.cursor);
+        self.has_more = !self.items.is_empty();
+        self.selected = 0;
+        self.scroll_offset = 0;
+        self.loading = false;
+        self.error = None;
+    }
+
+    pub fn start_load_more_request(&mut self) -> Option<crate::api::history::HistoryCursor> {
+        if self.loading || !self.has_more {
+            return None;
+        }
+        let cursor = self.cursor.clone()?;
+        self.loading = true;
+        Some(cursor)
+    }
+
+    pub fn apply_history_more(&mut self, data: crate::api::history::HistoryData) {
+        let new_items: Vec<HistoryCard> = data
+            .list
+            .into_iter()
+            .map(|item| HistoryCard {
+                item,
+                cover_protocol: None,
+            })
+            .collect();
+
+        if new_items.is_empty() {
+            self.has_more = false;
+        } else {
+            self.cursor = Some(data.cursor);
+            self.items.extend(new_items);
+        }
+        self.loading = false;
+    }
+
+    pub fn apply_load_more_error(&mut self, msg: String) {
+        self.error = Some(msg);
+        self.loading = false;
+    }
+
     pub async fn load_more(&mut self, api_client: &ApiClient) {
         if self.loading || !self.has_more {
             return;

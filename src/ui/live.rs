@@ -105,6 +105,53 @@ impl LivePage {
         }
     }
 
+    pub fn begin_loading(&mut self) {
+        self.loading = true;
+        self.error = None;
+    }
+
+    pub fn apply_live_init(&mut self, rooms: Vec<LiveRoom>) {
+        self.rooms = rooms
+            .into_iter()
+            .map(|room| LiveCard {
+                room,
+                cover_image: None,
+            })
+            .collect();
+        self.loading = false;
+        self.error = None;
+        self.selected_index = 0;
+        self.scroll_offset = 0;
+        self.last_load_time = Some(Instant::now());
+    }
+
+    pub fn apply_live_init_error(&mut self, msg: String) {
+        self.error = Some(msg);
+        self.loading = false;
+    }
+
+    pub fn begin_load_more(&mut self) -> bool {
+        if self.loading_more {
+            return false;
+        }
+        self.loading_more = true;
+        true
+    }
+
+    pub fn apply_live_more(&mut self, rooms: Vec<LiveRoom>) {
+        for room in rooms {
+            self.rooms.push(LiveCard {
+                room,
+                cover_image: None,
+            });
+        }
+        self.loading_more = false;
+    }
+
+    pub fn apply_live_more_error(&mut self) {
+        self.loading_more = false;
+    }
+
     pub async fn refresh(&mut self, api_client: &ApiClient) {
         self.rooms.clear();
         self.selected_index = 0;

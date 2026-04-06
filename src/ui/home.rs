@@ -109,6 +109,50 @@ impl HomePage {
         }
     }
 
+    pub fn begin_loading(&mut self) {
+        self.loading = true;
+        self.error_message = None;
+        self.pending_downloads.clear();
+        self.fresh_idx = 1;
+    }
+
+    pub fn apply_recommendations(&mut self, videos: Vec<VideoItem>) {
+        self.videos = videos
+            .into_iter()
+            .map(|video| VideoCard { video, cover: None })
+            .collect();
+        self.loading = false;
+        self.selected_index = 0;
+        self.scroll_row = 0;
+        self.error_message = None;
+    }
+
+    pub fn apply_recommendations_error(&mut self, msg: String) {
+        self.error_message = Some(msg);
+        self.loading = false;
+    }
+
+    pub fn begin_load_more(&mut self) -> Option<i32> {
+        if self.loading_more {
+            return None;
+        }
+        self.loading_more = true;
+        self.fresh_idx += 1;
+        Some(self.fresh_idx)
+    }
+
+    pub fn apply_load_more(&mut self, videos: Vec<VideoItem>) {
+        for video in videos {
+            self.videos.push(VideoCard { video, cover: None });
+        }
+        self.loading_more = false;
+    }
+
+    pub fn apply_load_more_error(&mut self) {
+        self.fresh_idx -= 1;
+        self.loading_more = false;
+    }
+
     pub async fn load_more(&mut self, api_client: &ApiClient) {
         if self.loading_more {
             return;
