@@ -1,3 +1,21 @@
+## [1.0.10] - 2026-04-07
+
+### 🚀 Features
+
+- Support guest mode without forced login
+
+### 🐛 Bug Fixes
+
+- *(history)* 支持直播历史回车进入直播详情
+
+### 🚜 Refactor
+
+- Decouple network worker from UI loop
+- 重构工程分层并拆分 App 模块
+
+### 📚 Documentation
+
+- Update CHANGELOG.md for version 1.0.9
 ## [1.0.9] - 2026-01-16
 
 ### 🚀 Features
