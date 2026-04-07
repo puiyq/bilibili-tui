@@ -185,8 +185,53 @@ impl HistoryItem {
         matches!(self.history.business.as_str(), "archive" | "pgc")
     }
 
+    /// Check if this is a live room history entry
+    pub fn is_live(&self) -> bool {
+        self.history.business == "live"
+    }
+
     /// Get bvid if available
     pub fn get_bvid(&self) -> Option<&str> {
         self.history.bvid.as_deref().filter(|s| !s.is_empty())
+    }
+
+    /// Get live room id for live history entries
+    pub fn get_live_room_id(&self) -> Option<i64> {
+        if self.history.oid > 0 {
+            return Some(self.history.oid);
+        }
+
+        self.uri
+            .as_deref()
+            .and_then(Self::parse_live_room_id_from_uri)
+    }
+
+    fn parse_live_room_id_from_uri(uri: &str) -> Option<i64> {
+        let trimmed = uri.trim();
+        if trimmed.is_empty() {
+            return None;
+        }
+
+        let no_scheme = trimmed
+            .strip_prefix("https://")
+            .or_else(|| trimmed.strip_prefix("http://"))
+            .unwrap_or(trimmed);
+        let host_path = no_scheme.strip_prefix("//").unwrap_or(no_scheme);
+
+        let mut parts = host_path.splitn(2, '/');
+        let host = parts.next()?.split(':').next()?.to_ascii_lowercase();
+        if host != "live.bilibili.com" && host != "m.live.bilibili.com" {
+            return None;
+        }
+
+        let path = parts.next().unwrap_or_default();
+        let first_segment = path
+            .split(['?', '#'])
+            .next()
+            .unwrap_or_default()
+            .split('/')
+            .find(|seg| !seg.is_empty())?;
+
+        first_segment.parse::<i64>().ok().filter(|id| *id > 0)
     }
 }

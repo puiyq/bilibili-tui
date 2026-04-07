@@ -275,6 +275,22 @@ impl HistoryPage {
             self.scroll_offset = row - visible_rows + 1;
         }
     }
+
+    fn action_for_history_item(item: &HistoryItem) -> Option<AppAction> {
+        if item.is_video() {
+            if let Some(bvid) = item.get_bvid() {
+                let aid = item.history.oid;
+                return Some(AppAction::OpenVideoDetail(bvid.to_string(), aid));
+            }
+            return None;
+        }
+
+        if item.is_live() && item.live_status == 1 {
+            return item.get_live_room_id().map(AppAction::OpenLiveDetail);
+        }
+
+        None
+    }
 }
 
 impl Default for HistoryPage {
@@ -373,13 +389,7 @@ impl Component for HistoryPage {
         }
         if keys.matches_confirm(key) {
             if let Some(card) = self.items.get(self.selected) {
-                // Only open video detail for video types
-                if card.item.is_video() {
-                    if let Some(bvid) = card.item.get_bvid() {
-                        let aid = card.item.history.oid;
-                        return Some(AppAction::OpenVideoDetail(bvid.to_string(), aid));
-                    }
-                }
+                return Self::action_for_history_item(&card.item);
             }
             return None;
         }
@@ -444,12 +454,7 @@ impl Component for HistoryPage {
                         self.last_click_time = None;
                         self.last_click_index = None;
                         if let Some(card) = self.items.get(click_idx) {
-                            if card.item.is_video() {
-                                if let Some(bvid) = card.item.get_bvid() {
-                                    let aid = card.item.history.oid;
-                                    return Some(AppAction::OpenVideoDetail(bvid.to_string(), aid));
-                                }
-                            }
+                            return Self::action_for_history_item(&card.item);
                         }
                     } else {
                         self.selected = click_idx;
