@@ -7,7 +7,7 @@ use crate::infrastructure::{
     bilibili::ApiClient,
     persistence::{self, AppConfig, Credentials, Keybindings},
 };
-use crate::presentation::tui::{HomePage, LoginPage, Page, Sidebar, Theme, ThemeVariant};
+use crate::presentation::tui::{HomePage, Page, Sidebar, Theme, ThemeVariant};
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -65,12 +65,8 @@ impl App {
             .unwrap_or(ThemeVariant::CatppuccinMocha);
         let theme = Theme::from_variant(theme_variant);
 
-        // Start on login page if no credentials, otherwise go to home
-        let current_page = if credentials.is_some() {
-            Page::Home(HomePage::new())
-        } else {
-            Page::Login(LoginPage::new())
-        };
+        // Always start from home. Login is now an optional flow.
+        let current_page = Page::Home(HomePage::new());
 
         Self {
             current_page,

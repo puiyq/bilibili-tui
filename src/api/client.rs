@@ -82,6 +82,10 @@ impl ApiClient {
         *self.cookies.write().expect("cookies lock poisoned") = Some(cookie_str);
     }
 
+    pub fn clear_credentials(&self) {
+        *self.cookies.write().expect("cookies lock poisoned") = None;
+    }
+
     fn build_url(&self, domain: BilibiliApiDomain, endpoint: &str) -> String {
         format!("{}{}", domain.as_str(), endpoint)
     }
@@ -262,6 +266,120 @@ impl ApiClient {
             .data
             .map(|d| d.item.into_iter().filter(|v| v.bvid.is_some()).collect())
             .unwrap_or_default())
+    }
+
+    /// Guest homepage videos from popular feed
+    pub async fn get_popular_videos(
+        &self,
+        page: i32,
+        page_size: i32,
+    ) -> Result<Vec<super::recommend::VideoItem>> {
+        let url = format!(
+            "{}/x/web-interface/popular?pn={}&ps={}",
+            BilibiliApiDomain::Main.as_str(),
+            page.max(1),
+            page_size.max(1)
+        );
+
+        let mut req = self.client.get(&url);
+        if let Some(ref cookies) = *self.cookies.read().expect("cookies lock poisoned") {
+            req = req.header(COOKIE, cookies.as_str());
+        }
+
+        let value: serde_json::Value = req.send().await?.json().await?;
+        let code = value
+            .get("code")
+            .and_then(|v| v.as_i64())
+            .unwrap_or_default();
+        if code != 0 {
+            let message = value
+                .get("message")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown error");
+            return Err(anyhow!("Popular API error {}: {}", code, message));
+        }
+
+        let list = value
+            .get("data")
+            .and_then(|d| d.get("list"))
+            .and_then(|l| l.as_array())
+            .cloned()
+            .unwrap_or_default();
+
+        let videos = list
+            .into_iter()
+            .filter_map(|item| {
+                let bvid = item
+                    .get("bvid")
+                    .and_then(|v| v.as_str())
+                    .map(ToOwned::to_owned);
+                let aid = item
+                    .get("aid")
+                    .and_then(|v| v.as_i64())
+                    .or_else(|| item.get("id").and_then(|v| v.as_i64()))
+                    .unwrap_or_default();
+
+                if bvid.is_none() || aid <= 0 {
+                    return None;
+                }
+
+                let owner = item.get("owner").and_then(|o| {
+                    let mid = o.get("mid").and_then(|v| v.as_i64()).unwrap_or_default();
+                    let name = o
+                        .get("name")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("-")
+                        .to_string();
+                    if mid == 0 && name == "-" {
+                        None
+                    } else {
+                        Some(super::recommend::VideoOwner {
+                            mid,
+                            name,
+                            face: o
+                                .get("face")
+                                .and_then(|v| v.as_str())
+                                .map(ToOwned::to_owned),
+                        })
+                    }
+                });
+
+                let stat = item.get("stat").map(|s| super::recommend::VideoStat {
+                    view: s.get("view").and_then(|v| v.as_i64()),
+                    like: s.get("like").and_then(|v| v.as_i64()),
+                    danmaku: s.get("danmaku").and_then(|v| v.as_i64()),
+                });
+
+                Some(super::recommend::VideoItem {
+                    id: aid,
+                    bvid,
+                    cid: item.get("cid").and_then(|v| v.as_i64()),
+                    goto: item
+                        .get("goto")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("av")
+                        .to_string(),
+                    uri: item
+                        .get("uri")
+                        .and_then(|v| v.as_str())
+                        .map(ToOwned::to_owned),
+                    pic: item
+                        .get("pic")
+                        .and_then(|v| v.as_str())
+                        .map(ToOwned::to_owned),
+                    title: item
+                        .get("title")
+                        .and_then(|v| v.as_str())
+                        .map(ToOwned::to_owned),
+                    duration: item.get("duration").and_then(|v| v.as_i64()),
+                    pubdate: item.get("pubdate").and_then(|v| v.as_i64()),
+                    owner,
+                    stat,
+                })
+            })
+            .collect();
+
+        Ok(videos)
     }
 
     // Video API

@@ -10,10 +10,12 @@ use std::sync::{mpsc, Arc};
 pub enum NetworkCommand {
     LoadHome {
         req_id: u64,
+        use_guest_feed: bool,
     },
     LoadHomeMore {
         req_id: u64,
         fresh_idx: i32,
+        use_guest_feed: bool,
     },
     LoadHotwords {
         req_id: u64,
@@ -164,12 +166,27 @@ pub fn start_network_worker(api_client: Arc<ApiClient>) -> NetworkBridge {
 
 async fn handle_command(api_client: Arc<ApiClient>, command: NetworkCommand) -> NetworkEvent {
     match command {
-        NetworkCommand::LoadHome { req_id } => match api_client.get_recommendations().await {
+        NetworkCommand::LoadHome {
+            req_id,
+            use_guest_feed,
+        } => match if use_guest_feed {
+            api_client.get_popular_videos(1, 20).await
+        } else {
+            api_client.get_recommendations().await
+        } {
             Ok(videos) => NetworkEvent::HomeLoaded { req_id, videos },
             Err(e) => failed(req_id, "home", e),
         },
-        NetworkCommand::LoadHomeMore { req_id, fresh_idx } => {
-            match api_client.get_recommendations_paged(fresh_idx).await {
+        NetworkCommand::LoadHomeMore {
+            req_id,
+            fresh_idx,
+            use_guest_feed,
+        } => {
+            match if use_guest_feed {
+                api_client.get_popular_videos(fresh_idx, 20).await
+            } else {
+                api_client.get_recommendations_paged(fresh_idx).await
+            } {
                 Ok(videos) => NetworkEvent::HomeMoreLoaded { req_id, videos },
                 Err(e) => failed(req_id, "home_more", e),
             }

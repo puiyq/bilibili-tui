@@ -37,12 +37,13 @@ pub struct SettingsPage {
     pub selected_keybind_index: usize,
     pub keybindings: Keybindings,
     pub current_theme_variant: ThemeVariant,
+    pub is_logged_in: bool,
     section_index: usize,
     pub editing_keybind: bool,
 }
 
 impl SettingsPage {
-    pub fn new(keybindings: Keybindings, theme_variant: ThemeVariant) -> Self {
+    pub fn new(keybindings: Keybindings, theme_variant: ThemeVariant, is_logged_in: bool) -> Self {
         let theme_index = ThemeVariant::all()
             .iter()
             .position(|v| *v == theme_variant)
@@ -54,6 +55,7 @@ impl SettingsPage {
             selected_keybind_index: 0,
             keybindings,
             current_theme_variant: theme_variant,
+            is_logged_in,
             section_index: 0,
             editing_keybind: false,
         }
@@ -96,7 +98,7 @@ impl SettingsPage {
 
 impl Default for SettingsPage {
     fn default() -> Self {
-        Self::new(Keybindings::default(), ThemeVariant::CatppuccinMocha)
+        Self::new(Keybindings::default(), ThemeVariant::CatppuccinMocha, false)
     }
 }
 
@@ -283,8 +285,11 @@ impl Component for SettingsPage {
                     }
                 }
                 SettingsSection::Account => {
-                    // Logout
-                    return Some(AppAction::Logout);
+                    return Some(if self.is_logged_in {
+                        AppAction::Logout
+                    } else {
+                        AppAction::SwitchToLogin
+                    });
                 }
                 SettingsSection::Keybindings => {
                     // Enter keybind editing mode
@@ -447,35 +452,53 @@ impl SettingsPage {
         let inner = block.inner(area);
         frame.render_widget(block, area);
 
-        // Layout for account info + logout button
+        // Layout for account info + action button
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
             .constraints([
                 Constraint::Length(3), // Info
-                Constraint::Length(3), // Logout button
+                Constraint::Length(3), // Action button
                 Constraint::Min(0),    // Spacer
             ])
             .split(inner);
 
-        let info = Paragraph::new("已登录")
-            .style(Style::default().fg(theme.success))
-            .alignment(Alignment::Left);
+        let info = Paragraph::new(if self.is_logged_in {
+            "已登录"
+        } else {
+            "未登录"
+        })
+        .style(Style::default().fg(if self.is_logged_in {
+            theme.success
+        } else {
+            theme.warning
+        }))
+        .alignment(Alignment::Left);
         frame.render_widget(info, chunks[0]);
 
-        let logout_btn = Paragraph::new("▶ 退出登录")
+        let action_label = if self.is_logged_in {
+            "▶ 退出登录"
+        } else {
+            "▶ 去登录"
+        };
+        let action_color = if self.is_logged_in {
+            theme.error
+        } else {
+            theme.info
+        };
+        let action_btn = Paragraph::new(action_label)
             .style(
                 Style::default()
-                    .fg(theme.error)
+                    .fg(action_color)
                     .add_modifier(Modifier::BOLD),
             )
             .block(
                 Block::default()
                     .borders(Borders::ALL)
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(theme.error)),
+                    .border_style(Style::default().fg(action_color)),
             )
             .alignment(Alignment::Center);
-        frame.render_widget(logout_btn, chunks[1]);
+        frame.render_widget(action_btn, chunks[1]);
     }
 }

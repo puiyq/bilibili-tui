@@ -7,6 +7,30 @@ use crate::presentation::tui::{
 };
 
 impl App {
+    fn login_required_message() -> String {
+        "该功能需要登录，请前往设置页登录".to_string()
+    }
+
+    fn apply_login_required_hint(&mut self) {
+        let msg = Self::login_required_message();
+        match &mut self.current_page {
+            Page::Dynamic(page) => {
+                page.loading_up_list = false;
+                page.set_error(msg);
+            }
+            Page::History(page) => page.apply_load_more_error(msg),
+            Page::VideoDetail(page) => {
+                page.error_message = Some(msg);
+                page.loading = false;
+            }
+            Page::DynamicDetail(page) => {
+                page.error_message = Some(msg);
+                page.loading = false;
+            }
+            _ => {}
+        }
+    }
+
     /// 记录当前页面以便返回导航
     fn save_previous_page(&mut self) {
         self.previous_page = match &self.current_page {
@@ -130,6 +154,10 @@ impl App {
                 }
             }
             AppAction::RefreshDynamic => {
+                if self.credentials.is_none() {
+                    self.apply_login_required_hint();
+                    return;
+                }
                 if let Page::Dynamic(page) = &mut self.current_page {
                     page.loading = true;
                     let tab = page.current_tab;
@@ -224,6 +252,7 @@ impl App {
                         self.send_network_command(network::NetworkCommand::LoadHomeMore {
                             req_id,
                             fresh_idx,
+                            use_guest_feed: self.credentials.is_none(),
                         });
                     }
                 }
@@ -251,6 +280,10 @@ impl App {
                 }
             }
             AppAction::LoadMoreDynamic => {
+                if self.credentials.is_none() {
+                    self.apply_login_required_hint();
+                    return;
+                }
                 let mut command = None;
                 if let Page::Dynamic(page) = &mut self.current_page {
                     if page.loading_more || !page.has_more {
@@ -273,6 +306,10 @@ impl App {
                 }
             }
             AppAction::LoadMoreHistory => {
+                if self.credentials.is_none() {
+                    self.apply_login_required_hint();
+                    return;
+                }
                 if let Page::History(page) = &mut self.current_page {
                     if let Some(cursor) = page.start_load_more_request() {
                         let req_id = self.next_request_id("history_more");
@@ -304,6 +341,10 @@ impl App {
                 }
             }
             AppAction::SwitchDynamicTab(tab) => {
+                if self.credentials.is_none() {
+                    self.apply_login_required_hint();
+                    return;
+                }
                 let mut command = None;
                 if let Page::Dynamic(page) = &mut self.current_page {
                     page.switch_tab(tab);
@@ -320,6 +361,10 @@ impl App {
                 }
             }
             AppAction::SelectUpMaster(index) => {
+                if self.credentials.is_none() {
+                    self.apply_login_required_hint();
+                    return;
+                }
                 let mut command = None;
                 if let Page::Dynamic(page) = &mut self.current_page {
                     page.select_up(index);
@@ -347,13 +392,19 @@ impl App {
             }
             AppAction::SwitchToSettings => {
                 self.sidebar.select(NavItem::Settings);
-                let page = SettingsPage::new(self.keybindings.clone(), self.theme_variant);
+                let page = SettingsPage::new(
+                    self.keybindings.clone(),
+                    self.theme_variant,
+                    self.credentials.is_some(),
+                );
                 self.current_page = Page::Settings(Box::new(page));
             }
             AppAction::Logout => {
                 let _ = persistence::delete_credentials();
                 self.credentials = None;
-                self.current_page = Page::Login(LoginPage::new());
+                self.api_client.clear_credentials();
+                self.cached_home = None;
+                self.current_page = Page::Home(HomePage::new());
                 self.init_current_page().await;
             }
             AppAction::LikeComment {
@@ -361,6 +412,10 @@ impl App {
                 rpid,
                 comment_type,
             } => {
+                if self.credentials.is_none() {
+                    self.apply_login_required_hint();
+                    return;
+                }
                 let client = self.api_client.clone();
                 // Toggle like - if already liked, unlike
                 if let Page::VideoDetail(page) = &mut self.current_page {
@@ -395,6 +450,10 @@ impl App {
                 message,
                 root,
             } => {
+                if self.credentials.is_none() {
+                    self.apply_login_required_hint();
+                    return;
+                }
                 let client = self.api_client.clone();
                 if let Ok(_response) = client
                     .add_comment(oid, comment_type, &message, root, root)
@@ -496,7 +555,11 @@ impl App {
             }
             NavItem::Settings => {
                 if !matches!(self.current_page, Page::Settings(_)) {
-                    let page = SettingsPage::new(self.keybindings.clone(), self.theme_variant);
+                    let page = SettingsPage::new(
+                        self.keybindings.clone(),
+                        self.theme_variant,
+                        self.credentials.is_some(),
+                    );
                     self.current_page = Page::Settings(Box::new(page));
                 }
             }
@@ -518,7 +581,10 @@ impl App {
             Page::Home(page) => {
                 page.begin_loading();
                 let req_id = self.next_request_id("home");
-                self.send_network_command(network::NetworkCommand::LoadHome { req_id });
+                self.send_network_command(network::NetworkCommand::LoadHome {
+                    req_id,
+                    use_guest_feed: self.credentials.is_none(),
+                });
             }
             Page::Search(page) => {
                 page.start_hotword_loading();
@@ -526,6 +592,11 @@ impl App {
                 self.send_network_command(network::NetworkCommand::LoadHotwords { req_id });
             }
             Page::Dynamic(page) => {
+                if self.credentials.is_none() {
+                    page.loading_up_list = false;
+                    page.set_error(Self::login_required_message());
+                    return;
+                }
                 page.loading_up_list = true;
                 let tab = page.current_tab;
                 let host_mid = page.get_selected_up_mid();
@@ -543,6 +614,10 @@ impl App {
                 // DynamicDetail is initialized when created
             }
             Page::History(page) => {
+                if self.credentials.is_none() {
+                    page.apply_load_more_error(Self::login_required_message());
+                    return;
+                }
                 page.begin_loading();
                 let req_id = self.next_request_id("history_init");
                 self.send_network_command(network::NetworkCommand::LoadHistoryInit { req_id });
