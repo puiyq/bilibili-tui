@@ -22,7 +22,7 @@ pub use login::LoginPage;
 pub use search::SearchPage;
 pub use settings::SettingsPage;
 pub use sidebar::{NavItem, Sidebar};
-pub use theme::{Theme, ThemeVariant};
+pub use theme::{Theme, ThemeChoice, DEFAULT_THEME_ID};
 pub use video_card::{VideoCard, VideoCardGrid};
 pub use video_detail::VideoDetailPage;
 

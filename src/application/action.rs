@@ -1,6 +1,6 @@
 use crate::api::video::VideoPage;
 use crate::infrastructure::persistence::{Credentials, Keybindings};
-use crate::presentation::tui::{DynamicTab, ThemeVariant};
+use crate::presentation::tui::DynamicTab;
 
 /// Actions that can be triggered from UI components
 #[derive(Debug, Clone)]
@@ -65,8 +65,8 @@ pub enum AppAction {
     SelectUpMaster(usize),
     /// Switch to next theme variant
     NextTheme,
-    /// Set a specific theme
-    SetTheme(ThemeVariant),
+    /// Set a specific theme by Opaline theme ID
+    SetTheme(String),
     /// Save keybindings to config
     SaveKeybindings(Box<Keybindings>),
     /// Logout and return to login page

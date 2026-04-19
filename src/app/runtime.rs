@@ -131,7 +131,12 @@ impl App {
     fn draw_page(&mut self, frame: &mut Frame, area: Rect) {
         match &mut self.current_page {
             Page::Login(page) => page.draw(frame, area, &self.theme, &self.keybindings),
-            Page::Home(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::Home(page) => {
+                if let Some(notice) = self.pending_home_notice.take() {
+                    page.set_footer_notice(notice);
+                }
+                page.draw(frame, area, &self.theme, &self.keybindings);
+            }
             Page::Search(page) => page.draw(frame, area, &self.theme, &self.keybindings),
             Page::Dynamic(page) => page.draw(frame, area, &self.theme, &self.keybindings),
             Page::DynamicDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),

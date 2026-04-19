@@ -1,6 +1,6 @@
 //! Settings page with theme selection, keybinding display, and account management
 
-use super::{Component, Theme, ThemeVariant};
+use super::{Component, Theme, ThemeChoice, DEFAULT_THEME_ID};
 use crate::application::AppAction;
 use crate::storage::Keybindings;
 use ratatui::{crossterm::event::KeyCode, prelude::*, widgets::*};
@@ -36,17 +36,19 @@ pub struct SettingsPage {
     pub selected_theme_index: usize,
     pub selected_keybind_index: usize,
     pub keybindings: Keybindings,
-    pub current_theme_variant: ThemeVariant,
+    pub current_theme_id: String,
+    pub theme_choices: Vec<ThemeChoice>,
     pub is_logged_in: bool,
     section_index: usize,
     pub editing_keybind: bool,
 }
 
 impl SettingsPage {
-    pub fn new(keybindings: Keybindings, theme_variant: ThemeVariant, is_logged_in: bool) -> Self {
-        let theme_index = ThemeVariant::all()
+    pub fn new(keybindings: Keybindings, theme_id: String, is_logged_in: bool) -> Self {
+        let theme_choices = Theme::available_theme_choices();
+        let theme_index = theme_choices
             .iter()
-            .position(|v| *v == theme_variant)
+            .position(|t| t.id == theme_id)
             .unwrap_or(0);
 
         Self {
@@ -54,7 +56,8 @@ impl SettingsPage {
             selected_theme_index: theme_index,
             selected_keybind_index: 0,
             keybindings,
-            current_theme_variant: theme_variant,
+            current_theme_id: theme_id,
+            theme_choices,
             is_logged_in,
             section_index: 0,
             editing_keybind: false,
@@ -98,7 +101,7 @@ impl SettingsPage {
 
 impl Default for SettingsPage {
     fn default() -> Self {
-        Self::new(Keybindings::default(), ThemeVariant::CatppuccinMocha, false)
+        Self::new(Keybindings::default(), DEFAULT_THEME_ID.to_string(), false)
     }
 }
 
@@ -259,7 +262,7 @@ impl Component for SettingsPage {
         if keys.matches_down(key) {
             match self.current_section {
                 SettingsSection::Theme => {
-                    let max = ThemeVariant::all().len().saturating_sub(1);
+                    let max = self.theme_choices.len().saturating_sub(1);
                     if self.selected_theme_index < max {
                         self.selected_theme_index += 1;
                     }
@@ -277,11 +280,9 @@ impl Component for SettingsPage {
         if keys.matches_confirm(key) {
             match self.current_section {
                 SettingsSection::Theme => {
-                    let themes = ThemeVariant::all();
-                    if self.selected_theme_index < themes.len() {
-                        let selected = themes[self.selected_theme_index];
-                        self.current_theme_variant = selected;
-                        return Some(AppAction::SetTheme(selected));
+                    if let Some(selected) = self.theme_choices.get(self.selected_theme_index) {
+                        self.current_theme_id = selected.id.clone();
+                        return Some(AppAction::SetTheme(selected.id.clone()));
                     }
                 }
                 SettingsSection::Account => {
@@ -358,12 +359,13 @@ impl SettingsPage {
         let inner = block.inner(area);
         frame.render_widget(block, area);
 
-        let items: Vec<ListItem> = ThemeVariant::all()
+        let items: Vec<ListItem> = self
+            .theme_choices
             .iter()
             .enumerate()
-            .map(|(idx, variant)| {
+            .map(|(idx, choice)| {
                 let is_selected = idx == self.selected_theme_index;
-                let is_current = *variant == self.current_theme_variant;
+                let is_current = choice.id == self.current_theme_id;
 
                 let mut style = if is_selected {
                     Style::default()
@@ -381,7 +383,7 @@ impl SettingsPage {
                     style = style.fg(theme.success);
                 }
 
-                ListItem::new(format!("{}{}{}", prefix, variant.label(), suffix)).style(style)
+                ListItem::new(format!("{}{}{}", prefix, choice.label.as_str(), suffix)).style(style)
             })
             .collect();
 

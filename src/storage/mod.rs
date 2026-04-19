@@ -387,7 +387,7 @@ pub struct AppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            theme: "CatppuccinMocha".to_string(),
+            theme: "silkcircuit-neon".to_string(),
             keybindings: Keybindings::default(),
         }
     }

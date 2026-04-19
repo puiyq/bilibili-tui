@@ -381,20 +381,20 @@ impl App {
                 }
             }
             AppAction::NextTheme => {
-                self.theme_variant = self.theme_variant.next();
-                self.theme = Theme::from_variant(self.theme_variant);
+                self.theme_id = Theme::next_theme_id(&self.theme_id);
+                self.theme = Theme::load_or_default(&self.theme_id).0;
                 self.save_theme_to_config();
             }
-            AppAction::SetTheme(variant) => {
-                self.theme_variant = variant;
-                self.theme = Theme::from_variant(variant);
+            AppAction::SetTheme(theme_id) => {
+                self.theme_id = theme_id;
+                self.theme = Theme::load_or_default(&self.theme_id).0;
                 self.save_theme_to_config();
             }
             AppAction::SwitchToSettings => {
                 self.sidebar.select(NavItem::Settings);
                 let page = SettingsPage::new(
                     self.keybindings.clone(),
-                    self.theme_variant,
+                    self.theme_id.clone(),
                     self.credentials.is_some(),
                 );
                 self.current_page = Page::Settings(Box::new(page));
@@ -557,7 +557,7 @@ impl App {
                 if !matches!(self.current_page, Page::Settings(_)) {
                     let page = SettingsPage::new(
                         self.keybindings.clone(),
-                        self.theme_variant,
+                        self.theme_id.clone(),
                         self.credentials.is_some(),
                     );
                     self.current_page = Page::Settings(Box::new(page));
@@ -638,7 +638,7 @@ impl App {
     }
 
     fn save_theme_to_config(&mut self) {
-        self.config.theme = self.theme_variant.to_string();
+        self.config.theme = self.theme_id.clone();
         if persistence::save_config(&self.config).is_err() {}
     }
 }

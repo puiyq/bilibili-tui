@@ -7,7 +7,7 @@ use crate::infrastructure::{
     bilibili::ApiClient,
     persistence::{self, AppConfig, Credentials, Keybindings},
 };
-use crate::presentation::tui::{HomePage, Page, Sidebar, Theme, ThemeVariant};
+use crate::presentation::tui::{HomePage, Page, Sidebar, Theme, DEFAULT_THEME_ID};
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -33,9 +33,10 @@ pub struct App {
 
     pub previous_page: Option<PreviousPage>,
     pub theme: Theme,
-    pub theme_variant: ThemeVariant,
+    pub theme_id: String,
     pub config: AppConfig,
     pub keybindings: Keybindings,
+    pub pending_home_notice: Option<String>,
 
     /// Cached home page to avoid refresh when switching tabs
     pub cached_home: Option<HomePage>,
@@ -59,11 +60,13 @@ impl App {
         // Load config and apply saved theme
         let config = persistence::load_config().unwrap_or_default();
         let keybindings = config.keybindings.clone();
-        let theme_variant = config
-            .theme
-            .parse()
-            .unwrap_or(ThemeVariant::CatppuccinMocha);
-        let theme = Theme::from_variant(theme_variant);
+        let configured_theme_id = config.theme.clone();
+        let (theme, used_fallback) = Theme::load_or_default(&configured_theme_id);
+        let theme_id = if used_fallback {
+            DEFAULT_THEME_ID.to_string()
+        } else {
+            configured_theme_id
+        };
 
         // Always start from home. Login is now an optional flow.
         let current_page = Page::Home(HomePage::new());
@@ -77,9 +80,11 @@ impl App {
             show_sidebar: true,
             previous_page: None,
             theme,
-            theme_variant,
+            theme_id,
             config,
             keybindings,
+            pending_home_notice: used_fallback
+                .then_some("⚠ 旧主题配置无效，请前往设置页重新选择主题".to_string()),
             cached_home: None,
             network_command_tx: bridge.command_tx,
             network_event_rx: bridge.event_rx,

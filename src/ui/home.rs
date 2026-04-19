@@ -45,6 +45,7 @@ pub struct HomePage {
     fresh_idx: i32,
     loading_more: bool,
     cached_visible_rows: usize,
+    footer_notice: Option<String>,
     // Double-click detection
     last_click_time: Option<Instant>,
     last_click_index: Option<usize>,
@@ -83,6 +84,7 @@ impl HomePage {
             fresh_idx: 1,
             loading_more: false,
             cached_visible_rows: Self::INITIAL_VISIBLE_ROWS,
+            footer_notice: None,
             last_click_time: None,
             last_click_index: None,
         }
@@ -262,6 +264,10 @@ impl HomePage {
     fn total_rows(&self) -> usize {
         self.videos.len().div_ceil(self.columns)
     }
+
+    pub fn set_footer_notice(&mut self, notice: String) {
+        self.footer_notice = Some(notice);
+    }
 }
 
 impl Default for HomePage {
@@ -399,7 +405,15 @@ impl Component for HomePage {
             Span::styled("] ", Style::default().fg(theme.fg_secondary)),
             Span::styled("切换主题", Style::default().fg(theme.fg_secondary)),
         ]);
-        let help = Paragraph::new(help_line).alignment(Alignment::Center);
+        let help_text = if let Some(notice) = self.footer_notice.take() {
+            Text::from(vec![
+                help_line,
+                Line::from(Span::styled(notice, Style::default().fg(theme.warning))),
+            ])
+        } else {
+            Text::from(help_line)
+        };
+        let help = Paragraph::new(help_text).alignment(Alignment::Center);
         frame.render_widget(help, chunks[2]);
     }
 
