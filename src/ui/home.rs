@@ -184,8 +184,16 @@ impl HomePage {
             return false;
         }
         let current_row = self.selected_row();
-        let total = self.total_rows();
-        current_row + 2 >= total.saturating_sub(1) && total > visible_rows
+        let total_rows = self.total_rows();
+        let last_row = total_rows.saturating_sub(1);
+
+        if total_rows <= visible_rows {
+            // When all currently loaded rows fit in viewport, trigger load-more at the real bottom.
+            current_row >= last_row
+        } else {
+            // Keep preloading behavior when content is taller than viewport.
+            current_row + 2 >= last_row
+        }
     }
 
     /// Start background downloads for visible covers (non-blocking)
