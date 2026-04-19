@@ -42,12 +42,18 @@ pub struct HistoryPage {
     pending_downloads: HashSet<usize>,
     cover_rx: mpsc::Receiver<CoverResult>,
     cover_tx: mpsc::Sender<CoverResult>,
+    cached_visible_rows: usize,
 
     last_click_time: Option<Instant>,
     last_click_index: Option<usize>,
 }
 
 impl HistoryPage {
+    const COLUMNS: usize = 4;
+    const CARD_HEIGHT: u16 = 12;
+    const PREFETCH_BUFFER_ROWS: usize = 2;
+    const INITIAL_VISIBLE_ROWS: usize = 3;
+
     pub fn new() -> Self {
         let picker = Arc::new(Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks()));
         let (tx, rx) = mpsc::channel(32);
@@ -64,6 +70,7 @@ impl HistoryPage {
             pending_downloads: HashSet::new(),
             cover_rx: rx,
             cover_tx: tx,
+            cached_visible_rows: Self::INITIAL_VISIBLE_ROWS,
             last_click_time: None,
             last_click_index: None,
         }
@@ -197,9 +204,8 @@ impl HistoryPage {
         if self.items.is_empty() {
             return false;
         }
-        let cols = 4;
-        let total_rows = self.items.len().div_ceil(cols);
-        let current_row = self.selected / cols;
+        let total_rows = self.items.len().div_ceil(Self::COLUMNS);
+        let current_row = self.selected / Self::COLUMNS;
         current_row + 2 >= self.scroll_offset + visible_rows.min(total_rows)
     }
 
@@ -210,9 +216,9 @@ impl HistoryPage {
         }
 
         // Calculate visible range
-        let cols = 4;
-        let visible_start = self.scroll_offset * cols;
-        let visible_end = (visible_start + 5 * cols).min(self.items.len());
+        let visible_start = self.scroll_offset * Self::COLUMNS;
+        let prefetch_rows = self.cached_visible_rows + Self::PREFETCH_BUFFER_ROWS;
+        let visible_end = (visible_start + prefetch_rows * Self::COLUMNS).min(self.items.len());
 
         for idx in visible_start..visible_end {
             if self.items[idx].cover_protocol.is_some() || self.pending_downloads.contains(&idx) {
@@ -259,12 +265,11 @@ impl HistoryPage {
     }
 
     fn visible_rows(&self, height: u16) -> usize {
-        let card_height = 12u16;
-        (height / card_height).max(1) as usize
+        (height / Self::CARD_HEIGHT).max(1) as usize
     }
 
     fn selected_row(&self) -> usize {
-        self.selected / 4
+        self.selected / Self::COLUMNS
     }
 
     fn update_scroll(&mut self, visible_rows: usize) {
@@ -353,7 +358,7 @@ impl Component for HistoryPage {
         key: KeyCode,
         keys: &crate::storage::Keybindings,
     ) -> Option<AppAction> {
-        let cols = 4;
+        let cols = Self::COLUMNS;
         let total = self.items.len();
 
         if keys.matches_quit(key) || keys.matches_back(key) {
@@ -382,7 +387,7 @@ impl Component for HistoryPage {
                 self.selected += cols;
             }
             // Check if we need to load more
-            if self.is_near_bottom(4) {
+            if self.is_near_bottom(self.cached_visible_rows) {
                 return Some(AppAction::LoadMoreHistory);
             }
             return None;
@@ -406,14 +411,14 @@ impl Component for HistoryPage {
     }
 
     fn handle_mouse(&mut self, event: MouseEvent, area: Rect) -> Option<AppAction> {
-        let cols = 4;
+        let cols = Self::COLUMNS;
         let total = self.items.len();
 
         match event.kind {
             MouseEventKind::ScrollDown => {
                 if self.selected + cols < total {
                     self.selected += cols;
-                    if self.is_near_bottom(4) {
+                    if self.is_near_bottom(self.cached_visible_rows) {
                         return Some(AppAction::LoadMoreHistory);
                     }
                 }
@@ -432,7 +437,7 @@ impl Component for HistoryPage {
                     return None;
                 }
 
-                let card_height = 12u16;
+                let card_height = Self::CARD_HEIGHT;
                 let card_width = inner.width / cols as u16;
 
                 let relative_y = event.row - inner.y;
@@ -473,11 +478,12 @@ impl Component for HistoryPage {
 
 impl HistoryPage {
     fn render_grid(&mut self, frame: &mut Frame, area: Rect, theme: &Theme) {
-        let cols = 4;
+        let cols = Self::COLUMNS;
         let visible_rows = self.visible_rows(area.height);
+        self.cached_visible_rows = visible_rows;
         self.update_scroll(visible_rows);
 
-        let card_height = 12u16;
+        let card_height = Self::CARD_HEIGHT;
         let card_width = area.width / cols as u16;
 
         let start_idx = self.scroll_offset * cols;

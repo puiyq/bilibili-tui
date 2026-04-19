@@ -36,7 +36,7 @@ pub struct LivePage {
     scroll_offset: usize,
     loading: bool,
     error: Option<String>,
-    last_area_height: u16,
+    cached_visible_rows: usize,
 
     // Image loading state
     picker: Arc<Picker>,
@@ -52,10 +52,10 @@ impl LivePage {
     const DEFAULT_COLUMNS: usize = 3;
     /// 卡片高度
     const CARD_HEIGHT: u16 = 10;
-    /// 预加载行数
-    const PREFETCH_ROWS: usize = 4;
-    /// 默认可见行数
-    const DEFAULT_VISIBLE_ROWS: usize = 3;
+    /// 预取缓冲行数（可见区域之外额外下载）
+    const PREFETCH_BUFFER_ROWS: usize = 4;
+    /// 初始可见行数回退值（首次渲染前使用）
+    const INITIAL_VISIBLE_ROWS: usize = 3;
 
     pub fn new() -> Self {
         let picker = Arc::new(Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks()));
@@ -67,7 +67,7 @@ impl LivePage {
             scroll_offset: 0,
             loading: false,
             error: None,
-            last_area_height: 0,
+            cached_visible_rows: Self::INITIAL_VISIBLE_ROWS,
             picker,
             cover_tx: tx,
             cover_rx: rx,
@@ -194,8 +194,7 @@ impl LivePage {
 
     /// Start background downloads for visible covers
     fn start_cover_downloads(&mut self) {
-        let visible_rows = self.visible_rows(self.last_area_height);
-        let prefetch_rows = visible_rows + Self::PREFETCH_ROWS;
+        let prefetch_rows = self.cached_visible_rows + Self::PREFETCH_BUFFER_ROWS;
         let start_idx = self.scroll_offset * self.columns;
         let end_idx = std::cmp::min(start_idx + prefetch_rows * self.columns, self.rooms.len());
 
@@ -280,7 +279,6 @@ impl Default for LivePage {
 
 impl Component for LivePage {
     fn draw(&mut self, frame: &mut Frame, area: Rect, theme: &Theme, keys: &Keybindings) {
-        self.last_area_height = area.height;
         self.poll_cover_results();
         self.start_cover_downloads();
 
@@ -431,7 +429,7 @@ impl Component for LivePage {
         if keys.matches_up(key) {
             if self.selected_index >= self.columns {
                 self.selected_index -= self.columns;
-                self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                self.update_scroll(self.cached_visible_rows);
             }
             return Some(AppAction::None);
         }
@@ -439,10 +437,10 @@ impl Component for LivePage {
             let new_idx = self.selected_index + self.columns;
             if new_idx < self.rooms.len() {
                 self.selected_index = new_idx;
-                self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                self.update_scroll(self.cached_visible_rows);
             }
             // Check for pagination
-            if self.is_near_bottom(Self::DEFAULT_VISIBLE_ROWS) && !self.loading_more {
+            if self.is_near_bottom(self.cached_visible_rows) && !self.loading_more {
                 return Some(AppAction::LoadMoreLive);
             }
             return Some(AppAction::None);
@@ -450,14 +448,14 @@ impl Component for LivePage {
         if keys.matches_left(key) {
             if self.selected_index > 0 {
                 self.selected_index -= 1;
-                self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                self.update_scroll(self.cached_visible_rows);
             }
             return Some(AppAction::None);
         }
         if keys.matches_right(key) {
             if self.selected_index + 1 < self.rooms.len() {
                 self.selected_index += 1;
-                self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                self.update_scroll(self.cached_visible_rows);
             }
             return Some(AppAction::None);
         }
@@ -491,7 +489,7 @@ impl Component for LivePage {
                 if new_idx < self.rooms.len() {
                     self.selected_index = new_idx;
                     // Check for pagination
-                    if self.is_near_bottom(Self::DEFAULT_VISIBLE_ROWS) && !self.loading_more {
+                    if self.is_near_bottom(self.cached_visible_rows) && !self.loading_more {
                         return Some(AppAction::LoadMoreLive);
                     }
                 }
@@ -511,6 +509,7 @@ impl Component for LivePage {
 impl LivePage {
     fn render_grid(&mut self, frame: &mut Frame, area: Rect, theme: &Theme) {
         let visible_rows = self.visible_rows(area.height);
+        self.cached_visible_rows = visible_rows;
         self.update_scroll(visible_rows);
 
         let row_constraints: Vec<Constraint> = (0..visible_rows)

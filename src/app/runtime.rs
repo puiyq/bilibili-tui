@@ -30,10 +30,8 @@ impl App {
 
             if event::poll(std::time::Duration::from_millis(100))? {
                 match event::read()? {
-                    Event::Key(key) => {
-                        if key.kind == KeyEventKind::Press {
-                            self.handle_input(key.code, key.modifiers).await;
-                        }
+                    Event::Key(key) if key.kind == KeyEventKind::Press => {
+                        self.handle_input(key.code, key.modifiers).await;
                     }
                     Event::Mouse(mouse) => match mouse.kind {
                         MouseEventKind::ScrollDown => {

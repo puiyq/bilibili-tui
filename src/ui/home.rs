@@ -44,6 +44,7 @@ pub struct HomePage {
     pending_downloads: HashSet<usize>,
     fresh_idx: i32,
     loading_more: bool,
+    cached_visible_rows: usize,
     // Double-click detection
     last_click_time: Option<Instant>,
     last_click_index: Option<usize>,
@@ -54,10 +55,10 @@ impl HomePage {
     const DEFAULT_COLUMNS: usize = 3;
     /// 卡片高度
     const CARD_HEIGHT: u16 = 10;
-    /// 预加载行数（用于提前下载封面）
-    const PREFETCH_ROWS: usize = 4;
-    /// 默认可见行数（用于滚动计算）
-    const DEFAULT_VISIBLE_ROWS: usize = 3;
+    /// 预取缓冲行数（可见区域之外额外下载）
+    const PREFETCH_BUFFER_ROWS: usize = 2;
+    /// 初始可见行数回退值（首次渲染前使用）
+    const INITIAL_VISIBLE_ROWS: usize = 3;
 
     pub fn new() -> Self {
         // Try to detect terminal graphics protocol (Kitty/Sixel/iTerm2)
@@ -81,6 +82,7 @@ impl HomePage {
             pending_downloads: HashSet::new(),
             fresh_idx: 1,
             loading_more: false,
+            cached_visible_rows: Self::INITIAL_VISIBLE_ROWS,
             last_click_time: None,
             last_click_index: None,
         }
@@ -190,9 +192,10 @@ impl HomePage {
             return;
         }
 
-        // Calculate visible range
+        // Calculate visible range using current viewport rows + small buffer
         let start = self.scroll_row * self.columns;
-        let end = (start + self.columns * Self::PREFETCH_ROWS).min(self.videos.len()); // Prefetch extra rows
+        let prefetch_rows = self.cached_visible_rows + Self::PREFETCH_BUFFER_ROWS;
+        let end = (start + self.columns * prefetch_rows).min(self.videos.len());
 
         for idx in start..end {
             // Skip if already has cover or is pending
@@ -414,9 +417,9 @@ impl Component for HomePage {
                 if new_idx < self.videos.len() {
                     self.selected_index = new_idx;
                 }
-                self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                self.update_scroll(self.cached_visible_rows);
                 // Check for pagination
-                if self.is_near_bottom(Self::DEFAULT_VISIBLE_ROWS) && !self.loading_more {
+                if self.is_near_bottom(self.cached_visible_rows) && !self.loading_more {
                     return Some(AppAction::LoadMoreRecommendations);
                 }
             }
@@ -425,21 +428,21 @@ impl Component for HomePage {
         if keys.matches_up(key) {
             if !self.videos.is_empty() && self.selected_index >= self.columns {
                 self.selected_index -= self.columns;
-                self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                self.update_scroll(self.cached_visible_rows);
             }
             return Some(AppAction::None);
         }
         if keys.matches_right(key) {
             if !self.videos.is_empty() && self.selected_index + 1 < self.videos.len() {
                 self.selected_index += 1;
-                self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                self.update_scroll(self.cached_visible_rows);
             }
             return Some(AppAction::None);
         }
         if keys.matches_left(key) {
             if !self.videos.is_empty() && self.selected_index > 0 {
                 self.selected_index -= 1;
-                self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                self.update_scroll(self.cached_visible_rows);
             }
             return Some(AppAction::None);
         }
@@ -481,9 +484,9 @@ impl Component for HomePage {
                     let new_idx = self.selected_index + self.columns;
                     if new_idx < self.videos.len() {
                         self.selected_index = new_idx;
-                        self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                        self.update_scroll(self.cached_visible_rows);
                         // Check for pagination only when actually moved
-                        if self.is_near_bottom(Self::DEFAULT_VISIBLE_ROWS) && !self.loading_more {
+                        if self.is_near_bottom(self.cached_visible_rows) && !self.loading_more {
                             return Some(AppAction::LoadMoreRecommendations);
                         }
                     }
@@ -494,7 +497,7 @@ impl Component for HomePage {
                 // Scroll up by one row
                 if !self.videos.is_empty() && self.selected_index >= self.columns {
                     self.selected_index -= self.columns;
-                    self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                    self.update_scroll(self.cached_visible_rows);
                 }
                 None
             }
@@ -535,7 +538,7 @@ impl Component for HomePage {
                         } else {
                             // Single click: select card and record for potential double-click
                             self.selected_index = click_idx;
-                            self.update_scroll(Self::DEFAULT_VISIBLE_ROWS);
+                            self.update_scroll(self.cached_visible_rows);
                             self.last_click_time = Some(now);
                             self.last_click_index = Some(click_idx);
                         }
@@ -561,6 +564,7 @@ impl Component for HomePage {
 impl HomePage {
     fn render_grid(&mut self, frame: &mut Frame, area: Rect, theme: &Theme) {
         let visible_rows = self.visible_rows(area.height);
+        self.cached_visible_rows = visible_rows;
 
         let row_constraints: Vec<Constraint> = (0..visible_rows)
             .map(|_| Constraint::Min(self.card_height))

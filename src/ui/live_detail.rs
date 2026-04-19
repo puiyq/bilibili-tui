@@ -207,10 +207,8 @@ impl LiveDetailPage {
             LiveMessage::Popularity(count) => {
                 self.popularity = Some(count);
             }
-            LiveMessage::AuthReply { code } => {
-                if code != 0 {
-                    self.ws_error = Some(format!("WebSocket认证失败: {}", code));
-                }
+            LiveMessage::AuthReply { code } if code != 0 => {
+                self.ws_error = Some(format!("WebSocket认证失败: {}", code));
             }
             _ => {}
         }
