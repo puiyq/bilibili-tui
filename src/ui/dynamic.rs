@@ -564,12 +564,13 @@ impl Component for DynamicPage {
 
         // Help
         let help = Paragraph::new(format!(
-            "{}:卡片导航 | {}/{}:切UP主 | {}/{}:切标签 | {}:切页面 | {}:详情 | {}:刷新",
+            "{}:卡片导航 | {}/{}:切UP主 | {}/{}/{}:切标签 | {}:切页面 | {}:详情 | {}:刷新",
             keys.get_nav_keys_display(),
-            keys.get_arrow_keys_display(),
-            keys.get_arrow_keys_display(),
-            keys.section_prev,
-            keys.section_next,
+            keys.up_prev,
+            keys.up_next,
+            keys.tab_1,
+            keys.tab_2,
+            keys.tab_3,
             keys.nav_next_page,
             keys.confirm,
             keys.refresh
@@ -628,24 +629,6 @@ impl Component for DynamicPage {
         }
         if keys.matches_nav_prev(key) {
             return Some(AppAction::NavPrev);
-        }
-
-        // Tab switching
-        if keys.matches_section_prev(key) {
-            let new_tab = match self.current_tab {
-                DynamicTab::All => DynamicTab::Images,
-                DynamicTab::Videos => DynamicTab::All,
-                DynamicTab::Images => DynamicTab::Videos,
-            };
-            return Some(AppAction::SwitchDynamicTab(new_tab));
-        }
-        if keys.matches_section_next(key) {
-            let new_tab = match self.current_tab {
-                DynamicTab::All => DynamicTab::Videos,
-                DynamicTab::Videos => DynamicTab::Images,
-                DynamicTab::Images => DynamicTab::All,
-            };
-            return Some(AppAction::SwitchDynamicTab(new_tab));
         }
 
         // Direct tab access

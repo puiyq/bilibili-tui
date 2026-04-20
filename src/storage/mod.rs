@@ -113,8 +113,8 @@ impl Default for Keybindings {
             toggle_replies: "r".to_string(),
 
             // Dynamic page
-            up_prev: "h".to_string(),
-            up_next: "l".to_string(),
+            up_prev: "[".to_string(),
+            up_next: "]".to_string(),
         }
     }
 }
@@ -287,11 +287,11 @@ impl Keybindings {
     }
 
     pub fn matches_up_prev(&self, key: KeyCode) -> bool {
-        self.matches(&self.up_prev, key)
+        self.matches(&self.up_prev, key) || key == KeyCode::Char('[')
     }
 
     pub fn matches_up_next(&self, key: KeyCode) -> bool {
-        self.matches(&self.up_next, key)
+        self.matches(&self.up_next, key) || key == KeyCode::Char(']')
     }
 
     pub fn get_nav_keys_display(&self) -> String {
@@ -454,7 +454,15 @@ pub fn load_config() -> Result<AppConfig> {
     let path = get_config_path()?;
     if path.exists() {
         let json = fs::read_to_string(path)?;
-        let config: AppConfig = serde_json::from_str(&json)?;
+        let mut config: AppConfig = serde_json::from_str(&json)?;
+        // Backward compatibility for dynamic UP navigation defaults:
+        // old defaults were h/l, and a previous regression used [ and /.
+        if (config.keybindings.up_prev == "h" && config.keybindings.up_next == "l")
+            || (config.keybindings.up_prev == "[" && config.keybindings.up_next == "/")
+        {
+            config.keybindings.up_prev = "[".to_string();
+            config.keybindings.up_next = "]".to_string();
+        }
         Ok(config)
     } else {
         Ok(AppConfig::default())
