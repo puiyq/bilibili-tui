@@ -357,11 +357,7 @@ impl VideoDetailPage {
 
             // Main comment
             let reply_indicator = if comment.reply_count() > 0 {
-                if is_expanded {
-                    "▼"
-                } else {
-                    "▶"
-                }
+                if is_expanded { "▼" } else { "▶" }
             } else {
                 " "
             };
@@ -701,7 +697,8 @@ impl Component for VideoDetailPage {
         let help_text = if self.input_mode {
             format!("[{}] 发送评论  [{}] 取消", keys.confirm, keys.back)
         } else {
-            format!("[{}/{}] 滚动  [{}] 切换  [{}] 点赞/选择  [{}] 评论  [{}] 回复  [{}] 播放  [{}] 返回",
+            format!(
+                "[{}/{}] 滚动  [{}] 切换  [{}] 点赞/选择  [{}] 评论  [{}] 回复  [{}] 播放  [{}] 返回",
                 keys.nav_up,
                 keys.nav_down,
                 keys.nav_next_page,
@@ -838,10 +835,10 @@ impl Component for VideoDetailPage {
                     }
                 }
                 DetailFocus::Episodes => {
-                    if let Some(pages) = self.get_pages() {
-                        if self.episode_scroll + 1 < pages.len() {
-                            self.episode_scroll += 1;
-                        }
+                    if let Some(pages) = self.get_pages()
+                        && self.episode_scroll + 1 < pages.len()
+                    {
+                        self.episode_scroll += 1;
                     }
                 }
                 DetailFocus::Related => {
@@ -899,24 +896,24 @@ impl Component for VideoDetailPage {
                 }
                 DetailFocus::Episodes => {
                     // Select and play the episode with auto-advance
-                    if let Some(pages) = self.get_pages().cloned() {
-                        if self.episode_scroll < pages.len() {
-                            self.current_page_index = self.episode_scroll;
-                            return Some(AppAction::PlayVideoWithPages {
-                                bvid: self.bvid.clone(),
-                                aid: self.aid,
-                                pages,
-                                current_index: self.episode_scroll,
-                            });
-                        }
+                    if let Some(pages) = self.get_pages().cloned()
+                        && self.episode_scroll < pages.len()
+                    {
+                        self.current_page_index = self.episode_scroll;
+                        return Some(AppAction::PlayVideoWithPages {
+                            bvid: self.bvid.clone(),
+                            aid: self.aid,
+                            pages,
+                            current_index: self.episode_scroll,
+                        });
                     }
                 }
                 DetailFocus::Related => {
-                    if let Some(card) = self.related_card_grid.selected_card() {
-                        if let Some(bvid) = &card.bvid {
-                            let aid = card.aid.unwrap_or(0);
-                            return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
-                        }
+                    if let Some(card) = self.related_card_grid.selected_card()
+                        && let Some(bvid) = &card.bvid
+                    {
+                        let aid = card.aid.unwrap_or(0);
+                        return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
                     }
                 }
             }
@@ -950,10 +947,10 @@ impl Component for VideoDetailPage {
                         }
                     }
                     DetailFocus::Episodes => {
-                        if let Some(pages) = self.get_pages() {
-                            if self.episode_scroll + 1 < pages.len() {
-                                self.episode_scroll += 1;
-                            }
+                        if let Some(pages) = self.get_pages()
+                            && self.episode_scroll + 1 < pages.len()
+                        {
+                            self.episode_scroll += 1;
                         }
                     }
                 }
@@ -997,10 +994,10 @@ impl Component for VideoDetailPage {
                     return None;
                 }
 
-                if let Some(error) = &self.error_message {
-                    if error.contains("视频信息") || error.contains("加载视频") {
-                        return None;
-                    }
+                if let Some(error) = &self.error_message
+                    && (error.contains("视频信息") || error.contains("加载视频"))
+                {
+                    return None;
                 }
 
                 let content_chunks = Layout::default()
@@ -1033,11 +1030,11 @@ impl Component for VideoDetailPage {
                     if is_double_click {
                         self.last_click_time = None;
                         self.last_click_index = None;
-                        if let Some(card) = self.related_card_grid.cards.get(click_idx) {
-                            if let Some(ref bvid) = card.bvid {
-                                let aid = card.aid.unwrap_or(0);
-                                return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
-                            }
+                        if let Some(card) = self.related_card_grid.cards.get(click_idx)
+                            && let Some(ref bvid) = card.bvid
+                        {
+                            let aid = card.aid.unwrap_or(0);
+                            return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
                         }
                     } else {
                         self.related_card_grid.selected_index = click_idx;

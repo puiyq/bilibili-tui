@@ -109,15 +109,15 @@ pub struct HistoryMeta {
 impl HistoryItem {
     /// Get the best cover URL
     pub fn get_cover(&self) -> Option<&str> {
-        if let Some(ref cover) = self.cover {
-            if !cover.is_empty() {
-                return Some(cover.as_str());
-            }
+        if let Some(ref cover) = self.cover
+            && !cover.is_empty()
+        {
+            return Some(cover.as_str());
         }
-        if let Some(ref covers) = self.covers {
-            if let Some(first) = covers.first() {
-                return Some(first.as_str());
-            }
+        if let Some(ref covers) = self.covers
+            && let Some(first) = covers.first()
+        {
+            return Some(first.as_str());
         }
         None
     }

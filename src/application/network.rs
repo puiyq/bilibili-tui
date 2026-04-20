@@ -1,10 +1,10 @@
 use crate::api::{
-    comment::CommentItem, dynamic::DynamicItem, dynamic::UpListItem, history::HistoryCursor,
-    history::HistoryData, live::LiveRoom, recommend::VideoItem, search::HotwordItem,
-    search::SearchVideoItem, video::RelatedVideoItem, video::VideoInfo, ApiClient,
+    ApiClient, comment::CommentItem, dynamic::DynamicItem, dynamic::UpListItem,
+    history::HistoryCursor, history::HistoryData, live::LiveRoom, recommend::VideoItem,
+    search::HotwordItem, search::SearchVideoItem, video::RelatedVideoItem, video::VideoInfo,
 };
 use crate::presentation::tui::DynamicTab;
-use std::sync::{mpsc, Arc};
+use std::sync::{Arc, mpsc};
 
 #[derive(Debug)]
 pub enum NetworkCommand {

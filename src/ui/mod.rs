@@ -22,16 +22,16 @@ pub use login::LoginPage;
 pub use search::SearchPage;
 pub use settings::SettingsPage;
 pub use sidebar::{NavItem, Sidebar};
-pub use theme::{Theme, ThemeChoice, DEFAULT_THEME_ID};
+pub use theme::{DEFAULT_THEME_ID, Theme, ThemeChoice};
 pub use video_card::{VideoCard, VideoCardGrid};
 pub use video_detail::VideoDetailPage;
 
 use crate::application::AppAction;
 use crate::storage::Keybindings;
 use ratatui::{
+    Frame,
     crossterm::event::{KeyCode, KeyModifiers, MouseEvent},
     prelude::Rect,
-    Frame,
 };
 
 /// UI Component trait

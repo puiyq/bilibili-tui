@@ -11,7 +11,7 @@ use ratatui::{
     prelude::*,
     widgets::*,
 };
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol, StatefulImage};
+use ratatui_image::{StatefulImage, picker::Picker, protocol::StatefulProtocol};
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Instant;
@@ -469,11 +469,11 @@ impl Component for HomePage {
             return Some(AppAction::None);
         }
         if keys.matches_confirm(key) || keys.matches_play(key) {
-            if let Some(card) = self.videos.get(self.selected_index) {
-                if let Some(bvid) = &card.video.bvid {
-                    let aid = card.video.id;
-                    return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
-                }
+            if let Some(card) = self.videos.get(self.selected_index)
+                && let Some(bvid) = &card.video.bvid
+            {
+                let aid = card.video.id;
+                return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
             }
             return Some(AppAction::None);
         }
@@ -551,11 +551,11 @@ impl Component for HomePage {
                             // Double-click: open video detail
                             self.last_click_time = None;
                             self.last_click_index = None;
-                            if let Some(card) = self.videos.get(click_idx) {
-                                if let Some(bvid) = &card.video.bvid {
-                                    let aid = card.video.id;
-                                    return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
-                                }
+                            if let Some(card) = self.videos.get(click_idx)
+                                && let Some(bvid) = &card.video.bvid
+                            {
+                                let aid = card.video.id;
+                                return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
                             }
                         } else {
                             // Single click: select card and record for potential double-click
@@ -570,11 +570,11 @@ impl Component for HomePage {
             }
             MouseEventKind::Down(MouseButton::Middle) => {
                 // Middle click opens video detail
-                if let Some(card) = self.videos.get(self.selected_index) {
-                    if let Some(bvid) = &card.video.bvid {
-                        let aid = card.video.id;
-                        return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
-                    }
+                if let Some(card) = self.videos.get(self.selected_index)
+                    && let Some(bvid) = &card.video.bvid
+                {
+                    let aid = card.video.id;
+                    return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
                 }
                 None
             }

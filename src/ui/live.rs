@@ -11,7 +11,7 @@ use ratatui::{
     prelude::*,
     widgets::*,
 };
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol, StatefulImage};
+use ratatui_image::{StatefulImage, picker::Picker, protocol::StatefulProtocol};
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Instant;
@@ -239,14 +239,13 @@ impl LivePage {
         while let Ok(result) = self.cover_rx.try_recv() {
             // Handle cover download result
             self.pending_downloads.remove(&result.room_id);
-            if let Some(protocol) = result.protocol {
-                if let Some(card) = self
+            if let Some(protocol) = result.protocol
+                && let Some(card) = self
                     .rooms
                     .iter_mut()
                     .find(|c| c.room.roomid == result.room_id)
-                {
-                    card.cover_image = Some(protocol);
-                }
+            {
+                card.cover_image = Some(protocol);
             }
         }
     }
@@ -467,10 +466,10 @@ impl Component for LivePage {
             }
             return Some(AppAction::None);
         }
-        if keys.matches_confirm(key) || keys.matches_play(key) {
-            if let Some(card) = self.rooms.get(self.selected_index) {
-                return Some(AppAction::OpenLiveDetail(card.room.roomid));
-            }
+        if (keys.matches_confirm(key) || keys.matches_play(key))
+            && let Some(card) = self.rooms.get(self.selected_index)
+        {
+            return Some(AppAction::OpenLiveDetail(card.room.roomid));
         }
         Some(AppAction::None)
     }

@@ -5,7 +5,7 @@ use std::process::Stdio;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::process::Command;
-use tokio::time::{interval, Instant};
+use tokio::time::{Instant, interval};
 
 /// Play a video using mpv with yt-dlp and report watch progress
 /// This function spawns mpv in a background task to avoid blocking the TUI

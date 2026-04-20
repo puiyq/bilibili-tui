@@ -2,9 +2,9 @@
 
 use super::wbi;
 use crate::storage::Credentials;
-use anyhow::{anyhow, Result};
-use reqwest::header::{HeaderMap, HeaderValue, COOKIE, REFERER, USER_AGENT};
+use anyhow::{Result, anyhow};
 use reqwest::Client;
+use reqwest::header::{COOKIE, HeaderMap, HeaderValue, REFERER, USER_AGENT};
 use serde::Deserialize;
 use std::sync::RwLock;
 
@@ -126,17 +126,17 @@ impl ApiClient {
                 .map(|(k, v)| (k.to_string(), v))
                 .collect();
 
-            if has_csrf && !params.iter().any(|(k, _)| k == "csrf") {
-                if let Some(cookie_str) = cookies.as_ref() {
-                    if let Some(csrf) = cookie_str.split(';').find_map(|part| {
-                        let part = part.trim();
-                        part.split_once('=')
-                            .filter(|(name, _)| *name == "bili_jct")
-                            .map(|(_, value)| value.to_string())
-                    }) {
-                        params.push(("csrf".to_string(), csrf));
-                    }
-                }
+            if has_csrf
+                && !params.iter().any(|(k, _)| k == "csrf")
+                && let Some(cookie_str) = cookies.as_ref()
+                && let Some(csrf) = cookie_str.split(';').find_map(|part| {
+                    let part = part.trim();
+                    part.split_once('=')
+                        .filter(|(name, _)| *name == "bili_jct")
+                        .map(|(_, value)| value.to_string())
+                })
+            {
+                params.push(("csrf".to_string(), csrf));
             }
             params
         }; // 锁在此处释放
@@ -431,11 +431,11 @@ impl ApiClient {
         let resp = req.send().await?;
         let data: super::search::HotwordResponse = resp.json().await?;
 
-        if let Some(code) = data.code {
-            if code != 0 {
-                let msg = data.message.unwrap_or_else(|| "unknown error".to_string());
-                return Err(anyhow!("Hot search API error: {}", msg));
-            }
+        if let Some(code) = data.code
+            && code != 0
+        {
+            let msg = data.message.unwrap_or_else(|| "unknown error".to_string());
+            return Err(anyhow!("Hot search API error: {}", msg));
         }
 
         Ok(data.list.unwrap_or_default())

@@ -1,6 +1,6 @@
 //! Settings page with theme selection, keybinding display, and account management
 
-use super::{Component, Theme, ThemeChoice, DEFAULT_THEME_ID};
+use super::{Component, DEFAULT_THEME_ID, Theme, ThemeChoice};
 use crate::application::AppAction;
 use crate::storage::Keybindings;
 use ratatui::{crossterm::event::KeyCode, prelude::*, widgets::*};

@@ -11,7 +11,7 @@ use ratatui::{
     prelude::*,
     widgets::*,
 };
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol, StatefulImage};
+use ratatui_image::{StatefulImage, picker::Picker, protocol::StatefulProtocol};
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Instant;

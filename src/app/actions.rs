@@ -1,5 +1,5 @@
 use crate::app::{App, PreviousPage};
-use crate::application::{network, AppAction};
+use crate::application::{AppAction, network};
 use crate::infrastructure::{media, persistence};
 use crate::presentation::tui::{
     DynamicDetailPage, DynamicPage, HistoryPage, HomePage, LiveDetailPage, LivePage, LoginPage,
@@ -119,10 +119,10 @@ impl App {
                     )
                     .await;
                     // Update current page index in video detail page
-                    if let Page::VideoDetail(detail_page) = &mut self.current_page {
-                        if detail_page.bvid == bvid {
-                            detail_page.current_page_index = current_index;
-                        }
+                    if let Page::VideoDetail(detail_page) = &mut self.current_page
+                        && detail_page.bvid == bvid
+                    {
+                        detail_page.current_page_index = current_index;
                     }
                 }
             }
@@ -246,15 +246,15 @@ impl App {
                 }
             },
             AppAction::LoadMoreRecommendations => {
-                if let Page::Home(page) = &mut self.current_page {
-                    if let Some(fresh_idx) = page.begin_load_more() {
-                        let req_id = self.next_request_id("home_more");
-                        self.send_network_command(network::NetworkCommand::LoadHomeMore {
-                            req_id,
-                            fresh_idx,
-                            use_guest_feed: self.credentials.is_none(),
-                        });
-                    }
+                if let Page::Home(page) = &mut self.current_page
+                    && let Some(fresh_idx) = page.begin_load_more()
+                {
+                    let req_id = self.next_request_id("home_more");
+                    self.send_network_command(network::NetworkCommand::LoadHomeMore {
+                        req_id,
+                        fresh_idx,
+                        use_guest_feed: self.credentials.is_none(),
+                    });
                 }
             }
             AppAction::LoadMoreSearch => {
@@ -310,14 +310,14 @@ impl App {
                     self.apply_login_required_hint();
                     return;
                 }
-                if let Page::History(page) = &mut self.current_page {
-                    if let Some(cursor) = page.start_load_more_request() {
-                        let req_id = self.next_request_id("history_more");
-                        self.send_network_command(network::NetworkCommand::LoadHistoryMore {
-                            req_id,
-                            cursor,
-                        });
-                    }
+                if let Page::History(page) = &mut self.current_page
+                    && let Some(cursor) = page.start_load_more_request()
+                {
+                    let req_id = self.next_request_id("history_more");
+                    self.send_network_command(network::NetworkCommand::LoadHistoryMore {
+                        req_id,
+                        cursor,
+                    });
                 }
             }
             AppAction::SwitchToHistory => {
@@ -499,11 +499,11 @@ impl App {
                 }
             }
             AppAction::LoadMoreLive => {
-                if let Page::Live(page) = &mut self.current_page {
-                    if page.begin_load_more() {
-                        let req_id = self.next_request_id("live_more");
-                        self.send_network_command(network::NetworkCommand::LoadLiveMore { req_id });
-                    }
+                if let Page::Live(page) = &mut self.current_page
+                    && page.begin_load_more()
+                {
+                    let req_id = self.next_request_id("live_more");
+                    self.send_network_command(network::NetworkCommand::LoadLiveMore { req_id });
                 }
             }
             AppAction::PlayLive { room_id, title: _ } => {
@@ -515,12 +515,12 @@ impl App {
 
     async fn switch_to_nav_page(&mut self) {
         // First, cache home page if we're leaving it
-        if matches!(self.current_page, Page::Home(_)) && self.sidebar.selected != NavItem::Home {
-            if let Page::Home(home_page) =
+        if matches!(self.current_page, Page::Home(_))
+            && self.sidebar.selected != NavItem::Home
+            && let Page::Home(home_page) =
                 std::mem::replace(&mut self.current_page, Page::Home(HomePage::new()))
-            {
-                self.cached_home = Some(home_page);
-            }
+        {
+            self.cached_home = Some(home_page);
         }
 
         match self.sidebar.selected {

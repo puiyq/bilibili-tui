@@ -193,10 +193,10 @@ impl Keybindings {
 
     /// Check if a key matches the configured keybinding (including arrow key alternatives)
     pub fn matches(&self, binding: &str, key: KeyCode) -> bool {
-        if let Some(configured_key) = Self::parse_keycode(binding) {
-            if key == configured_key {
-                return true;
-            }
+        if let Some(configured_key) = Self::parse_keycode(binding)
+            && key == configured_key
+        {
+            return true;
         }
         false
     }

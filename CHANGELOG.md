@@ -1,3 +1,13 @@
+## [1.0.11] - 2026-04-20
+
+### 🚀 Features
+
+- 添加缓存可见行数以优化滚动和预加载逻辑
+
+### 🐛 Bug Fixes
+
+- 优化行加载逻辑以改善滚动体验
+- Key binding conflicts in dynamic page
 ## [1.0.10] - 2026-04-07
 
 ### 🚀 Features
@@ -16,6 +26,10 @@
 ### 📚 Documentation
 
 - Update CHANGELOG.md for version 1.0.9
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Bump to 1.0.10
 ## [1.0.9] - 2026-01-16
 
 ### 🚀 Features

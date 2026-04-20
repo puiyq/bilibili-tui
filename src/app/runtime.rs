@@ -2,9 +2,9 @@ use crate::app::App;
 use crate::presentation::tui::{Component, Page};
 use crossterm::event::MouseEventKind;
 use ratatui::{
+    DefaultTerminal, Frame,
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers, MouseEvent},
     prelude::*,
-    DefaultTerminal, Frame,
 };
 use std::io;
 

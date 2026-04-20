@@ -2,7 +2,7 @@
 //!
 //! Implements packet encoding/decoding and message parsing for live stream messages.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::io::Read;
 

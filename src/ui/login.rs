@@ -8,7 +8,7 @@ use crate::storage::{Credentials, Keybindings};
 use image::DynamicImage;
 use qrcode::QrCode;
 use ratatui::{crossterm::event::KeyCode, prelude::*, widgets::*};
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol, StatefulImage};
+use ratatui_image::{StatefulImage, picker::Picker, protocol::StatefulProtocol};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tui_qrcode::{Colors, QrCodeWidget, QuietZone};

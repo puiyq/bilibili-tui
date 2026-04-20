@@ -161,16 +161,15 @@ impl SearchPage {
     }
 
     fn search_selected_hotword(&mut self) -> Option<AppAction> {
-        if let Some(idx) = self.hot_selected {
-            if let Some(item) = self.hotwords.get(idx) {
-                if let Some(keyword) = item.keyword_text() {
-                    self.query = keyword.clone();
-                    self.loading = true;
-                    self.page = 1;
-                    self.show_hot_list = false;
-                    return Some(AppAction::Search(keyword));
-                }
-            }
+        if let Some(idx) = self.hot_selected
+            && let Some(item) = self.hotwords.get(idx)
+            && let Some(keyword) = item.keyword_text()
+        {
+            self.query = keyword.clone();
+            self.loading = true;
+            self.page = 1;
+            self.show_hot_list = false;
+            return Some(AppAction::Search(keyword));
         }
         None
     }
@@ -510,10 +509,10 @@ impl Component for SearchPage {
                 return Some(AppAction::None);
             }
             if keys.matches_confirm(key) {
-                if let Some(card) = self.grid.selected_card() {
-                    if let (Some(bvid), Some(aid)) = (&card.bvid, card.aid) {
-                        return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
-                    }
+                if let Some(card) = self.grid.selected_card()
+                    && let (Some(bvid), Some(aid)) = (&card.bvid, card.aid)
+                {
+                    return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
                 }
                 return Some(AppAction::None);
             }
@@ -653,10 +652,10 @@ impl Component for SearchPage {
                     if is_double_click {
                         self.last_click_time = None;
                         self.last_click_index = None;
-                        if let Some(card) = self.grid.cards.get(click_idx) {
-                            if let (Some(bvid), Some(aid)) = (&card.bvid, card.aid) {
-                                return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
-                            }
+                        if let Some(card) = self.grid.cards.get(click_idx)
+                            && let (Some(bvid), Some(aid)) = (&card.bvid, card.aid)
+                        {
+                            return Some(AppAction::OpenVideoDetail(bvid.clone(), aid));
                         }
                     } else {
                         self.grid.selected_index = click_idx;

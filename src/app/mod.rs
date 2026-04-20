@@ -7,10 +7,10 @@ use crate::infrastructure::{
     bilibili::ApiClient,
     persistence::{self, AppConfig, Credentials, Keybindings},
 };
-use crate::presentation::tui::{HomePage, Page, Sidebar, Theme, DEFAULT_THEME_ID};
+use crate::presentation::tui::{DEFAULT_THEME_ID, HomePage, Page, Sidebar, Theme};
 use std::collections::HashMap;
-use std::sync::mpsc;
 use std::sync::Arc;
+use std::sync::mpsc;
 
 /// Previous page for back navigation
 #[derive(Clone)]

@@ -3,12 +3,12 @@
 //! Manages WebSocket connection for receiving live stream messages.
 
 use super::live_ws::{
-    make_auth_packet, make_heartbeat_packet, parse_message, DanmuInfoData, LiveMessage, Packet,
+    DanmuInfoData, LiveMessage, Packet, make_auth_packet, make_heartbeat_packet, parse_message,
 };
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::mpsc;
-use tokio::time::{interval, Duration};
+use tokio::time::{Duration, interval};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 /// Live WebSocket client

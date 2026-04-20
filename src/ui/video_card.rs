@@ -4,7 +4,7 @@ use super::Theme;
 use image::DynamicImage;
 use ratatui::prelude::*;
 use ratatui::widgets::*;
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol, StatefulImage};
+use ratatui_image::{StatefulImage, picker::Picker, protocol::StatefulProtocol};
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::mpsc;

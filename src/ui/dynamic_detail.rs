@@ -237,15 +237,15 @@ impl DynamicDetailPage {
                 item.desc_text()
             };
 
-            if let Some(text) = content_text {
-                if !text.is_empty() {
-                    lines.push("📝 动态内容:".to_string());
-                    lines.push(String::new());
-                    for line in wrap_text(text, 60) {
-                        lines.push(format!("  {}", line));
-                    }
-                    lines.push(String::new());
+            if let Some(text) = content_text
+                && !text.is_empty()
+            {
+                lines.push("📝 动态内容:".to_string());
+                lines.push(String::new());
+                for line in wrap_text(text, 60) {
+                    lines.push(format!("  {}", line));
                 }
+                lines.push(String::new());
             }
         } else {
             lines.push("加载中...".to_string());
@@ -457,20 +457,20 @@ impl Component for DynamicDetailPage {
                     return Some(AppAction::None);
                 }
                 KeyCode::Enter => {
-                    if !self.input_buffer.is_empty() {
-                        if let Some(ref item) = self.dynamic_item {
-                            let comment_type = item.comment_type();
-                            if let Some(oid) = item.comment_oid(&self.dynamic_id) {
-                                let message = self.input_buffer.clone();
-                                self.input_buffer.clear();
-                                self.input_mode = false;
-                                return Some(AppAction::AddComment {
-                                    oid,
-                                    comment_type,
-                                    message,
-                                    root: None,
-                                });
-                            }
+                    if !self.input_buffer.is_empty()
+                        && let Some(ref item) = self.dynamic_item
+                    {
+                        let comment_type = item.comment_type();
+                        if let Some(oid) = item.comment_oid(&self.dynamic_id) {
+                            let message = self.input_buffer.clone();
+                            self.input_buffer.clear();
+                            self.input_mode = false;
+                            return Some(AppAction::AddComment {
+                                oid,
+                                comment_type,
+                                message,
+                                root: None,
+                            });
                         }
                     }
                     return Some(AppAction::None);
@@ -537,17 +537,17 @@ impl Component for DynamicDetailPage {
         }
         if keys.matches_confirm(key) {
             // Like the currently selected comment
-            if let Some(ref item) = self.dynamic_item {
-                if self.selected_comment < self.comments.len() {
-                    let comment = &self.comments[self.selected_comment];
-                    let comment_type = item.comment_type();
-                    if let Some(oid) = item.comment_oid(&self.dynamic_id) {
-                        return Some(AppAction::LikeComment {
-                            oid,
-                            rpid: comment.rpid,
-                            comment_type,
-                        });
-                    }
+            if let Some(ref item) = self.dynamic_item
+                && self.selected_comment < self.comments.len()
+            {
+                let comment = &self.comments[self.selected_comment];
+                let comment_type = item.comment_type();
+                if let Some(oid) = item.comment_oid(&self.dynamic_id) {
+                    return Some(AppAction::LikeComment {
+                        oid,
+                        rpid: comment.rpid,
+                        comment_type,
+                    });
                 }
             }
             return Some(AppAction::None);

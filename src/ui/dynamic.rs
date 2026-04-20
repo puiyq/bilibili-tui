@@ -650,12 +650,11 @@ impl Component for DynamicPage {
                     return Some(AppAction::OpenVideoDetail(bvid.clone(), 0));
                 }
                 // Non-video card (draw/opus) - open dynamic detail
-                else if let Some(item) = self.selected_dynamic_item() {
-                    if item.is_draw() || item.is_opus() {
-                        if let Some(id) = &item.id_str {
-                            return Some(AppAction::OpenDynamicDetail(id.clone()));
-                        }
-                    }
+                else if let Some(item) = self.selected_dynamic_item()
+                    && (item.is_draw() || item.is_opus())
+                    && let Some(id) = &item.id_str
+                {
+                    return Some(AppAction::OpenDynamicDetail(id.clone()));
                 }
             }
             return Some(AppAction::None);
@@ -733,12 +732,11 @@ impl Component for DynamicPage {
                         if let Some(card) = self.grid.cards.get(click_idx) {
                             if let Some(ref bvid) = card.bvid {
                                 return Some(AppAction::OpenVideoDetail(bvid.clone(), 0));
-                            } else if let Some(item) = self.dynamic_items.get(click_idx) {
-                                if item.is_draw() || item.is_opus() {
-                                    if let Some(id) = &item.id_str {
-                                        return Some(AppAction::OpenDynamicDetail(id.clone()));
-                                    }
-                                }
+                            } else if let Some(item) = self.dynamic_items.get(click_idx)
+                                && (item.is_draw() || item.is_opus())
+                                && let Some(id) = &item.id_str
+                            {
+                                return Some(AppAction::OpenDynamicDetail(id.clone()));
                             }
                         }
                     } else {
