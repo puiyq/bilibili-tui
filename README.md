@@ -173,6 +173,11 @@ src/
 
   请参考[MPV-Play-BiliBili-Comments](https://github.com/itKelis/MPV-Play-BiliBili-Comments)
 
+- **MPV Bilibili SponsorBlock（可选）**
+
+  如需在播放时自动跳过 Bilibili 视频中的恰饭广告，可安装
+  [mpv_sponsorblock_for_bilibili](https://github.com/MareDevi/mpv_sponsorblock_for_bilibili)。
+
 #### 推荐终端
 
 支持以下终端图形协议以获得最佳图片预览体验：
@@ -585,6 +590,7 @@ MIT License
 - [MPV](https://mpv.io/) - 强大的媒体播放器
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) - 视频下载工具
 - [MPV-Play-BiliBili-Comments](https://github.com/itKelis/MPV-Play-BiliBili-Comments) - MPV Bilibili 弹幕
+- [mpv_sponsorblock](https://github.com/po5/mpv_sponsorblock) - MPV 恰饭广告自动跳过
 - [bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect) - Bilibili API 集合
 
 ## 📞 联系方式
