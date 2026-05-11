@@ -65,10 +65,10 @@ impl App {
 
     /// Get the content area excluding sidebar
     fn get_content_area(&self, area: Rect) -> Rect {
-        // Login page, VideoDetail, and DynamicDetail use full area
+        // Login page, VideoDetail, DynamicDetail, and BangumiDetail use full area
         if matches!(
             self.current_page,
-            Page::Login(_) | Page::VideoDetail(_) | Page::DynamicDetail(_)
+            Page::Login(_) | Page::VideoDetail(_) | Page::DynamicDetail(_) | Page::BangumiDetail(_)
         ) {
             return area;
         }
@@ -90,15 +90,16 @@ impl App {
     fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
 
-        // Login page, VideoDetail, and DynamicDetail don't show sidebar
+        // Login page, VideoDetail, DynamicDetail, and BangumiDetail don't show sidebar
         if matches!(
             self.current_page,
-            Page::Login(_) | Page::VideoDetail(_) | Page::DynamicDetail(_)
+            Page::Login(_) | Page::VideoDetail(_) | Page::DynamicDetail(_) | Page::BangumiDetail(_)
         ) {
             match &mut self.current_page {
                 Page::Login(page) => page.draw(frame, area, &self.theme, &self.keybindings),
                 Page::VideoDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
                 Page::DynamicDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+                Page::BangumiDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
                 _ => {}
             }
             return;
@@ -145,6 +146,8 @@ impl App {
             Page::Live(page) => page.draw(frame, area, &self.theme, &self.keybindings),
             Page::LiveDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
             Page::Settings(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::Bangumi(page) => page.draw(frame, area, &self.theme, &self.keybindings),
+            Page::BangumiDetail(page) => page.draw(frame, area, &self.theme, &self.keybindings),
         }
     }
 
@@ -161,6 +164,8 @@ impl App {
             Page::Live(page) => page.handle_input(key, keys),
             Page::LiveDetail(page) => page.handle_input(key, keys),
             Page::Settings(page) => page.handle_input(key, keys),
+            Page::Bangumi(page) => page.handle_input(key, keys),
+            Page::BangumiDetail(page) => page.handle_input(key, keys),
         };
 
         if let Some(action) = action {
@@ -180,6 +185,8 @@ impl App {
             Page::Live(page) => page.handle_mouse(event, area),
             Page::LiveDetail(page) => page.handle_mouse(event, area),
             Page::Settings(page) => page.handle_mouse(event, area),
+            Page::Bangumi(page) => page.handle_mouse(event, area),
+            Page::BangumiDetail(page) => page.handle_mouse(event, area),
         };
 
         if let Some(action) = action {
@@ -216,6 +223,10 @@ impl App {
             Page::History(page) => {
                 page.poll_cover_results();
                 page.start_cover_downloads();
+            }
+            Page::Bangumi(page) => {
+                page.index_grid.poll_cover_results();
+                page.index_grid.start_cover_downloads();
             }
             _ => {}
         }

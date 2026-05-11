@@ -44,6 +44,7 @@ pub async fn play_video(
         None
     };
 
+    cmd.arg("--ytdl-format=bestvideo+bestaudio/best");
     cmd.arg("--force-window=immediate");
     cmd.arg(&video_url);
 
@@ -107,6 +108,44 @@ pub async fn play_video(
     Ok(())
 }
 
+/// Play a bangumi episode using mpv with yt-dlp
+/// This function spawns mpv in a background task to avoid blocking the TUI
+pub async fn play_bangumi_episode(ep_id: i64, credentials: Option<&Credentials>) -> Result<()> {
+    let video_url = format!("https://www.bilibili.com/bangumi/play/ep{}", ep_id);
+
+    let mut cmd = Command::new("mpv");
+    cmd.stdout(Stdio::null());
+    cmd.stderr(Stdio::null());
+
+    let cookie_path_to_clean = if let Some(creds) = credentials {
+        let cookie_path = crate::storage::export_cookies_for_ytdlp(creds)?;
+        cmd.arg(format!(
+            "--ytdl-raw-options=cookies={}",
+            cookie_path.display()
+        ));
+        Some(cookie_path)
+    } else {
+        None
+    };
+
+    cmd.arg("--ytdl-format=bestvideo+bestaudio/best");
+    cmd.arg("--force-window=immediate");
+    cmd.arg(&video_url);
+
+    let mut child = cmd.spawn()?;
+
+    tokio::spawn(async move {
+        let _ = child.wait().await;
+
+        // Cleanup cookie file
+        if let Some(path) = cookie_path_to_clean {
+            let _ = tokio::fs::remove_file(path).await;
+        }
+    });
+
+    Ok(())
+}
+
 /// Play a live stream using mpv
 /// This function spawns mpv in a background task to avoid blocking the TUI
 pub async fn play_live(room_id: i64) -> Result<()> {
@@ -115,6 +154,7 @@ pub async fn play_live(room_id: i64) -> Result<()> {
     let mut cmd = Command::new("mpv");
     cmd.stdout(Stdio::null());
     cmd.stderr(Stdio::null());
+    cmd.arg("--ytdl-format=bestvideo+bestaudio/best");
     cmd.arg("--force-window=immediate");
     cmd.arg(&live_url);
 

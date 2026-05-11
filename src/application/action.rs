@@ -94,6 +94,29 @@ pub enum AppAction {
     LoadMoreLive,
     /// Play live stream
     PlayLive { room_id: i64, title: String },
+    /// Switch to bangumi page
+    SwitchToBangumi,
+    /// Refresh bangumi timeline
+    RefreshBangumi,
+    /// Switch bangumi tab
+    SwitchBangumiTab(BangumiTab),
+    /// Open bangumi detail page
+    OpenBangumiDetail(i64),
+    /// Load more bangumi index items
+    LoadMoreBangumi,
+    /// Play a bangumi episode
+    PlayBangumiEpisode {
+        ep_id: i64,
+        season_id: i64,
+        title: String,
+    },
     /// No action
     None,
+}
+
+/// Bangumi page tabs
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BangumiTab {
+    Timeline,
+    Index,
 }

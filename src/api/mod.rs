@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod bangumi;
 pub mod client;
 pub mod comment;
 pub mod dynamic;

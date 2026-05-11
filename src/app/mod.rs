@@ -7,7 +7,7 @@ use crate::infrastructure::{
     bilibili::ApiClient,
     persistence::{self, AppConfig, Credentials, Keybindings},
 };
-use crate::presentation::tui::{DEFAULT_THEME_ID, HomePage, Page, Sidebar, Theme};
+use crate::presentation::tui::{BangumiPage, DEFAULT_THEME_ID, HomePage, Page, Sidebar, Theme};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc;
@@ -20,6 +20,7 @@ pub enum PreviousPage {
     Dynamic,
     History,
     Live,
+    Bangumi,
 }
 
 /// Main application state
@@ -40,6 +41,8 @@ pub struct App {
 
     /// Cached home page to avoid refresh when switching tabs
     pub cached_home: Option<HomePage>,
+    /// Cached bangumi page to avoid refresh when switching tabs
+    pub cached_bangumi: Option<BangumiPage>,
     network_command_tx: mpsc::Sender<network::NetworkCommand>,
     network_event_rx: mpsc::Receiver<network::NetworkEvent>,
     request_seq: u64,
@@ -86,6 +89,7 @@ impl App {
             pending_home_notice: used_fallback
                 .then_some("⚠ 旧主题配置无效，请前往设置页重新选择主题".to_string()),
             cached_home: None,
+            cached_bangumi: None,
             network_command_tx: bridge.command_tx,
             network_event_rx: bridge.event_rx,
             request_seq: 0,

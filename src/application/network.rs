@@ -1,7 +1,17 @@
 use crate::api::{
-    ApiClient, comment::CommentItem, dynamic::DynamicItem, dynamic::UpListItem,
-    history::HistoryCursor, history::HistoryData, live::LiveRoom, recommend::VideoItem,
-    search::HotwordItem, search::SearchVideoItem, video::RelatedVideoItem, video::VideoInfo,
+    ApiClient,
+    bangumi::{SeasonRankItem, SeasonResult},
+    comment::CommentItem,
+    dynamic::DynamicItem,
+    dynamic::UpListItem,
+    history::HistoryCursor,
+    history::HistoryData,
+    live::LiveRoom,
+    recommend::VideoItem,
+    search::HotwordItem,
+    search::SearchVideoItem,
+    video::RelatedVideoItem,
+    video::VideoInfo,
 };
 use crate::presentation::tui::DynamicTab;
 use std::sync::{Arc, mpsc};
@@ -63,6 +73,13 @@ pub enum NetworkCommand {
         req_id: u64,
         dynamic_id: String,
     },
+    LoadBangumiIndex {
+        req_id: u64,
+    },
+    LoadBangumiDetail {
+        req_id: u64,
+        season_id: i64,
+    },
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -120,6 +137,15 @@ pub enum NetworkEvent {
         comments: Vec<CommentItem>,
         has_more_comments: bool,
         image_urls: Vec<String>,
+    },
+    BangumiIndexLoaded {
+        req_id: u64,
+        items: Vec<SeasonRankItem>,
+    },
+    BangumiDetailLoaded {
+        req_id: u64,
+        season_id: i64,
+        season: SeasonResult,
     },
     RequestFailed {
         req_id: u64,
@@ -391,6 +417,20 @@ async fn handle_command(api_client: Arc<ApiClient>, command: NetworkCommand) -> 
                 comments,
                 has_more_comments,
                 image_urls,
+            }
+        }
+        NetworkCommand::LoadBangumiIndex { req_id } => match api_client.get_bangumi_rank().await {
+            Ok(items) => NetworkEvent::BangumiIndexLoaded { req_id, items },
+            Err(e) => failed(req_id, "bangumi_index", e),
+        },
+        NetworkCommand::LoadBangumiDetail { req_id, season_id } => {
+            match api_client.get_bangumi_season(season_id).await {
+                Ok(season) => NetworkEvent::BangumiDetailLoaded {
+                    req_id,
+                    season_id,
+                    season,
+                },
+                Err(e) => failed(req_id, "bangumi_detail", e),
             }
         }
     }

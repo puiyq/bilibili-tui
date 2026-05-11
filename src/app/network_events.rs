@@ -189,6 +189,29 @@ impl App {
                     page.error_message = None;
                 }
             }
+            network::NetworkEvent::BangumiIndexLoaded { req_id, items } => {
+                if !self.is_latest_request("bangumi_index", req_id) {
+                    return;
+                }
+                if let Page::Bangumi(page) = &mut self.current_page {
+                    page.set_index_items(items);
+                }
+            }
+            network::NetworkEvent::BangumiDetailLoaded {
+                req_id,
+                season_id,
+                season,
+            } => {
+                if !self.is_latest_request("bangumi_detail", req_id) {
+                    return;
+                }
+                if let Page::BangumiDetail(page) = &mut self.current_page {
+                    if page.season_id != season_id {
+                        return;
+                    }
+                    page.set_season(season);
+                }
+            }
             network::NetworkEvent::RequestFailed {
                 req_id,
                 target,
@@ -231,6 +254,15 @@ impl App {
                     (Page::DynamicDetail(page), "dynamic_detail") => {
                         page.error_message = Some(format!("加载动态详情失败: {}", error));
                         page.loading = false;
+                    }
+                    (Page::Bangumi(page), "bangumi_timeline") => {
+                        page.set_error(format!("加载番剧时间表失败: {}", error));
+                    }
+                    (Page::Bangumi(page), "bangumi_index") => {
+                        page.set_error(format!("加载番剧索引失败: {}", error));
+                    }
+                    (Page::BangumiDetail(page), "bangumi_detail") => {
+                        page.set_error(format!("加载番剧详情失败: {}", error));
                     }
                     _ => {}
                 }

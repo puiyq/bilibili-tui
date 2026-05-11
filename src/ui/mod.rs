@@ -1,3 +1,5 @@
+mod bangumi;
+mod bangumi_detail;
 mod dynamic;
 mod dynamic_detail;
 mod history;
@@ -12,6 +14,8 @@ pub mod theme;
 mod video_card;
 mod video_detail;
 
+pub use bangumi::BangumiPage;
+pub use bangumi_detail::BangumiDetailPage;
 pub use dynamic::{DynamicPage, DynamicTab};
 pub use dynamic_detail::DynamicDetailPage;
 pub use history::HistoryPage;
@@ -68,4 +72,6 @@ pub enum Page {
     Live(LivePage),
     LiveDetail(Box<LiveDetailPage>),
     Settings(Box<SettingsPage>),
+    Bangumi(Box<BangumiPage>),
+    BangumiDetail(Box<BangumiDetailPage>),
 }

@@ -90,6 +90,18 @@ impl ApiClient {
         format!("{}{}", domain.as_str(), endpoint)
     }
 
+    fn check_code(value: &serde_json::Value) -> Result<()> {
+        let code = value.get("code").and_then(|v| v.as_i64()).unwrap_or(-1);
+        if code != 0 {
+            let msg = value
+                .get("message")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown error");
+            return Err(anyhow!("API error ({}): {}", code, msg));
+        }
+        Ok(())
+    }
+
     /// Make a GET request
     pub async fn get<T: for<'de> Deserialize<'de>>(&self, url: &str) -> Result<ApiResponse<T>> {
         let mut req = self.client.get(url);
@@ -99,6 +111,17 @@ impl ApiClient {
         let resp = req.send().await?;
         let api_resp: ApiResponse<T> = resp.json().await?;
         Ok(api_resp)
+    }
+
+    /// Make a GET request and return raw JSON
+    pub async fn get_json(&self, url: &str) -> Result<serde_json::Value> {
+        let mut req = self.client.get(url);
+        if let Some(ref cookies) = *self.cookies.read().expect("cookies lock poisoned") {
+            req = req.header(COOKIE, cookies.as_str());
+        }
+        let resp = req.send().await?;
+        let value: serde_json::Value = resp.json().await?;
+        Ok(value)
     }
 
     /// Make a POST request with form data
@@ -439,6 +462,50 @@ impl ApiClient {
         }
 
         Ok(data.list.unwrap_or_default())
+    }
+
+    // Bangumi API
+    pub async fn get_bangumi_timeline(&self) -> Result<Vec<super::bangumi::TimelineDay>> {
+        let url = self.build_url(BilibiliApiDomain::Main, "/pgc/web/timeline?types=1");
+        let value = self.get_json(&url).await?;
+        Self::check_code(&value)?;
+        let result = value
+            .get("result")
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
+            .unwrap_or_default();
+        Ok(result)
+    }
+
+    pub async fn get_bangumi_rank(&self) -> Result<Vec<super::bangumi::SeasonRankItem>> {
+        let url = format!(
+            "{}/pgc/web/rank/list?day=3&season_type=1",
+            BilibiliApiDomain::Main.as_str(),
+        );
+        let value = self.get_json(&url).await?;
+        Self::check_code(&value)?;
+        let list = value
+            .get("result")
+            .and_then(|r| r.get("list"))
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
+            .unwrap_or_default();
+        Ok(list)
+    }
+
+    pub async fn get_bangumi_season(&self, season_id: i64) -> Result<super::bangumi::SeasonResult> {
+        let url = format!(
+            "{}/pgc/view/web/season?season_id={}",
+            BilibiliApiDomain::Main.as_str(),
+            season_id,
+        );
+        let value = self.get_json(&url).await?;
+        Self::check_code(&value)?;
+        let result_val = value
+            .get("result")
+            .cloned()
+            .ok_or_else(|| anyhow!("API 返回缺少 result 字段"))?;
+        let result: super::bangumi::SeasonResult =
+            serde_json::from_value(result_val).map_err(|e| anyhow!("解析番剧详情失败: {}", e))?;
+        Ok(result)
     }
 
     // Dynamic Feed API

@@ -11,6 +11,7 @@ pub enum NavItem {
     Dynamic,
     History,
     Live,
+    Bangumi,
     Settings,
 }
 
@@ -22,6 +23,7 @@ impl NavItem {
             NavItem::Dynamic => "📺 动态",
             NavItem::History => "📜 历史",
             NavItem::Live => "📡 直播",
+            NavItem::Bangumi => "🎬 番剧",
             NavItem::Settings => "⚙️ 设置",
         }
     }
@@ -33,6 +35,7 @@ impl NavItem {
             NavItem::Dynamic,
             NavItem::History,
             NavItem::Live,
+            NavItem::Bangumi,
             NavItem::Settings,
         ]
     }

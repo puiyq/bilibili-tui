@@ -2,8 +2,8 @@ use crate::app::{App, PreviousPage};
 use crate::application::{AppAction, network};
 use crate::infrastructure::{media, persistence};
 use crate::presentation::tui::{
-    DynamicDetailPage, DynamicPage, HistoryPage, HomePage, LiveDetailPage, LivePage, LoginPage,
-    NavItem, Page, SearchPage, SettingsPage, Theme,
+    BangumiDetailPage, BangumiPage, DynamicDetailPage, DynamicPage, HistoryPage, HomePage,
+    LiveDetailPage, LivePage, LoginPage, NavItem, Page, SearchPage, SettingsPage, Theme,
 };
 
 impl App {
@@ -39,6 +39,7 @@ impl App {
             Page::Dynamic(_) => Some(PreviousPage::Dynamic),
             Page::History(_) => Some(PreviousPage::History),
             Page::Live(_) => Some(PreviousPage::Live),
+            Page::Bangumi(_) => Some(PreviousPage::Bangumi),
             _ => None,
         };
     }
@@ -233,6 +234,15 @@ impl App {
                     self.sidebar.select(NavItem::Live);
                     self.current_page = Page::Live(LivePage::new());
                     self.init_current_page().await;
+                }
+                Some(PreviousPage::Bangumi) => {
+                    self.sidebar.select(NavItem::Bangumi);
+                    if let Some(cached) = self.cached_bangumi.take() {
+                        self.current_page = Page::Bangumi(Box::new(cached));
+                    } else {
+                        self.current_page = Page::Bangumi(Box::<BangumiPage>::default());
+                        self.init_current_page().await;
+                    }
                 }
                 None => {
                     // Default to home
@@ -509,6 +519,50 @@ impl App {
             AppAction::PlayLive { room_id, title: _ } => {
                 let _ = media::play_live(room_id).await;
             }
+            AppAction::SwitchToBangumi => {
+                self.sidebar.select(NavItem::Bangumi);
+                if let Some(cached) = self.cached_bangumi.take() {
+                    self.current_page = Page::Bangumi(Box::new(cached));
+                } else {
+                    self.current_page = Page::Bangumi(Box::<BangumiPage>::default());
+                    self.init_current_page().await;
+                }
+            }
+            AppAction::RefreshBangumi => {
+                self.sidebar.select(NavItem::Bangumi);
+                self.cached_bangumi = None;
+                self.current_page = Page::Bangumi(Box::<BangumiPage>::default());
+                self.init_current_page().await;
+            }
+            AppAction::SwitchBangumiTab(_tab) => {
+                // Single tab mode, no-op
+            }
+            AppAction::OpenBangumiDetail(season_id) => {
+                self.save_previous_page();
+                if let Page::Bangumi(bangumi_page) = std::mem::replace(
+                    &mut self.current_page,
+                    Page::Bangumi(Box::<BangumiPage>::default()),
+                ) {
+                    self.cached_bangumi = Some(*bangumi_page);
+                }
+                let detail_page = BangumiDetailPage::new(season_id);
+                self.current_page = Page::BangumiDetail(Box::new(detail_page));
+                let req_id = self.next_request_id("bangumi_detail");
+                self.send_network_command(network::NetworkCommand::LoadBangumiDetail {
+                    req_id,
+                    season_id,
+                });
+            }
+            AppAction::LoadMoreBangumi => {
+                // Rank API has no pagination
+            }
+            AppAction::PlayBangumiEpisode {
+                ep_id,
+                season_id: _,
+                title: _,
+            } => {
+                let _ = media::play_bangumi_episode(ep_id, self.credentials.as_ref()).await;
+            }
             AppAction::None => {}
         }
     }
@@ -567,6 +621,16 @@ impl App {
                 if !matches!(self.current_page, Page::Live(_)) {
                     self.current_page = Page::Live(LivePage::new());
                     self.init_current_page().await;
+                }
+            }
+            NavItem::Bangumi => {
+                if !matches!(self.current_page, Page::Bangumi(_)) {
+                    if let Some(cached) = self.cached_bangumi.take() {
+                        self.current_page = Page::Bangumi(Box::new(cached));
+                    } else {
+                        self.current_page = Page::Bangumi(Box::<BangumiPage>::default());
+                        self.init_current_page().await;
+                    }
                 }
             }
         }
@@ -633,6 +697,14 @@ impl App {
             }
             Page::Settings(_) => {
                 // Settings doesn't need async initialization
+            }
+            Page::Bangumi(page) => {
+                page.loading = true;
+                let req_id = self.next_request_id("bangumi_index");
+                self.send_network_command(network::NetworkCommand::LoadBangumiIndex { req_id });
+            }
+            Page::BangumiDetail(_) => {
+                // BangumiDetail is initialized when created
             }
         }
     }
