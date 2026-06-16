@@ -2042,9 +2042,9 @@ checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "opaline"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1ab7165d71f0a02fd8e683c09ae0f341116bb5cef0e1df7eebacb6cecf0fb44"
+checksum = "26922aeb6bf0be5fe89413b1460ef0135e3c7de090bac05c05473623ae3b1746"
 dependencies = [
  "ratatui-core",
  "serde",
