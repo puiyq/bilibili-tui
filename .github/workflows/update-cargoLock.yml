@@ -1,0 +1,64 @@
+name: Weekly Cargo Update
+
+on:
+  schedule:
+    # 每周一 UTC 00:00 执行
+    - cron: "0 0 * * 1"
+  workflow_dispatch: # 允许手动触发
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cargo-update:
+    name: cargo update
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Run cargo update
+        run: cargo update
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet Cargo.lock; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: weekly cargo update"
+          branch: cargo-update/weekly
+          delete-branch: true
+          title: "chore: weekly cargo update"
+          body: |
+            由 [Weekly Cargo Update](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow 自动生成。
+
+            更新了 `Cargo.lock` 中的依赖版本，所有更改均在 semver 兼容范围内。
+
+            请检查 CI 通过后合并。
+          labels: |
+            dependencies
+            automated
